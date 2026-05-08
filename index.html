@@ -102,6 +102,7 @@
     <button class="tab active" onclick="showTab('graficos',this)">Gráficos</button>
     <button class="tab" onclick="showTab('objetivos',this)">Objetivos</button>
     <button class="tab" onclick="showTab('tabla',this)">Tabla detalle</button>
+    <button class="tab" onclick="showTab('calidad',this)">Calidad</button>
   </div>
 
   <div id="graficos" class="section active">
@@ -175,6 +176,69 @@
           <tbody id="tbody"></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <div id="calidad" class="section">
+    <div class="charts-grid">
+
+      <div class="card full">
+        <div class="card-title">Métricas de derivaciones — feb a may 2026</div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;" id="cal_metrics"></div>
+      </div>
+
+      <div class="card full">
+        <div class="card-title">Total de derivaciones por operador — feb a may 2026</div>
+        <div class="legend">
+          <span><span class="ldot" style="background:#26215C"></span>Mayor cantidad</span>
+          <span><span class="ldot" style="background:#7F77DD"></span>Cantidad media</span>
+          <span><span class="ldot" style="background:#EEEDFE"></span>Menor cantidad</span>
+        </div>
+        <div style="position:relative;width:100%;height:540px;"><canvas id="cc_total" role="img" aria-label="Total derivaciones por operador">Total de derivaciones a supervisor por operador.</canvas></div>
+      </div>
+
+      <div class="card full">
+        <div class="card-title">Evolución mensual de derivaciones</div>
+        <div style="position:relative;width:100%;height:260px;"><canvas id="cc_evol" role="img" aria-label="Evolución mensual">Evolución mensual del total de derivaciones.</canvas></div>
+      </div>
+
+      <div class="card full">
+        <div class="card-title">Motivos de derivación por mes</div>
+        <div style="position:relative;width:100%;height:280px;"><canvas id="cc_motmes" role="img" aria-label="Motivos por mes">Motivos de derivación agrupados por mes.</canvas></div>
+      </div>
+
+      <div class="card full">
+        <div class="card-title">Distribución total de motivos</div>
+        <div style="display:flex;gap:2rem;align-items:center;">
+          <div style="position:relative;width:260px;height:240px;flex-shrink:0;"><canvas id="cc_motivos" role="img" aria-label="Distribución motivos">Distribución de motivos acumulados.</canvas></div>
+          <div id="cc_motleg" style="font-size:12px;display:flex;flex-direction:column;gap:10px;color:var(--text-muted);"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Febrero 2026</div>
+        <div id="lbl_feb" style="font-size:12px;color:var(--text-muted);margin-bottom:8px;"></div>
+        <div style="position:relative;width:100%;height:400px;"><canvas id="cc_feb" role="img" aria-label="Derivaciones febrero">Derivaciones por operador en febrero.</canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Marzo 2026</div>
+        <div id="lbl_mar" style="font-size:12px;color:var(--text-muted);margin-bottom:8px;"></div>
+        <div style="position:relative;width:100%;height:400px;"><canvas id="cc_mar" role="img" aria-label="Derivaciones marzo">Derivaciones por operador en marzo.</canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Abril 2026</div>
+        <div id="lbl_abr" style="font-size:12px;color:var(--text-muted);margin-bottom:8px;"></div>
+        <div style="position:relative;width:100%;height:400px;"><canvas id="cc_abr" role="img" aria-label="Derivaciones abril">Derivaciones por operador en abril.</canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Mayo 2026</div>
+        <div id="lbl_may" style="font-size:12px;color:var(--text-muted);margin-bottom:8px;"></div>
+        <div style="position:relative;width:100%;height:400px;"><canvas id="cc_may" role="img" aria-label="Derivaciones mayo">Derivaciones por operador en mayo.</canvas></div>
+      </div>
+
     </div>
   </div>
 
@@ -323,6 +387,67 @@ function showTab(id,btn){
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
 }
+
+const CAL=[
+  {f:"2/2",op:"Velazquez, Cynthia",m:"Falta de Control de llamado"},{f:"2/2",op:"Hernandez, Cristian",m:"Falta de respuesta supervisor"},{f:"2/2",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"2/2",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"2/2",op:"Velazquez, Cynthia",m:"Cliente conflictivo"},{f:"3/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"3/2",op:"Falcon, Macancela Melissa",m:"Cliente conflictivo"},{f:"3/2",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"3/2",op:"Benitez, Andrea",m:"Cliente conflictivo"},{f:"3/2",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"4/2",op:"Menendez, Cinthya",m:"Cliente conflictivo"},{f:"4/2",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"4/2",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"4/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"5/2",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"5/2",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"5/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"5/2",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"5/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"6/2",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"9/2",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"9/2",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"9/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"9/2",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"9/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"9/2",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"9/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"10/2",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"10/2",op:"Coronel, Yanina Mariana",m:"Cliente conflictivo"},{f:"10/2",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"10/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"10/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"10/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"11/2",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"11/2",op:"Gonzalez, Valeria Silvana",m:"Cliente conflictivo"},{f:"11/2",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"12/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"12/2",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"12/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"13/2",op:"Coronel, Yanina Mariana",m:"Cliente conflictivo"},{f:"13/2",op:"Gonzalez, Samantha Agustina",m:"Cliente conflictivo"},{f:"13/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"13/2",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"13/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"13/2",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"13/2",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"13/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"14/2",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"18/2",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"18/2",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"18/2",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"18/2",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"18/2",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"18/2",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"18/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"18/2",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"18/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"18/2",op:"Antunez, Cecilia",m:"Cliente conflictivo"},{f:"19/2",op:"Gonzalez, Samantha Agustina",m:"Cliente conflictivo"},{f:"19/2",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"19/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"19/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"19/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"20/2",op:"Gonzalez, Samantha Agustina",m:"Cliente conflictivo"},{f:"20/2",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"21/2",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"21/2",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"23/2",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"23/2",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"23/2",op:"Maidana, Aldana Yamila",m:"Cliente conflictivo"},{f:"23/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"24/2",op:"Falcon, Macancela Melissa",m:"Cliente conflictivo"},{f:"24/2",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"24/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"25/2",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"25/2",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"25/2",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"25/2",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"26/2",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"26/2",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"27/2",op:"Alfonso, Angel Agustin",m:"Cliente conflictivo"},{f:"27/2",op:"Alfonso, Angel Agustin",m:"Cliente conflictivo"},{f:"27/2",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"27/2",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"27/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"28/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"28/2",op:"Alfonso, Angel Agustin",m:"Cliente conflictivo"},
+  {f:"2/3",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"2/3",op:"Falcon, Macancela Melissa",m:"Cliente conflictivo"},{f:"2/3",op:"Velazquez, Cynthia",m:"Cliente conflictivo"},{f:"2/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"3/3",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"3/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"3/3",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"3/3",op:"Gonzalez, Valeria Silvana",m:"Cliente conflictivo"},{f:"3/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"4/3",op:"Velazquez, Cynthia",m:"Cliente conflictivo"},{f:"4/3",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"4/3",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"4/3",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"4/3",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"4/3",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"4/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"4/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"4/3",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"4/3",op:"Velazquez, Cynthia",m:"Cliente conflictivo"},{f:"4/3",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"5/3",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"5/3",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"5/3",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"5/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"5/3",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"6/3",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"6/3",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"6/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"6/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"6/3",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"6/3",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"6/3",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"6/3",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"9/3",op:"Falcon, Macancela Melissa",m:"Cliente conflictivo"},{f:"9/3",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"9/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"9/3",op:"Alfonso, Angel Agustin",m:"Cliente conflictivo"},{f:"9/3",op:"Falcon, Macancela Melissa",m:"Cliente conflictivo"},{f:"9/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"9/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"9/3",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"10/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"10/3",op:"Velazquez, Cynthia",m:"Cliente conflictivo"},{f:"10/3",op:"Jara, Lucia Soledad",m:"Falta de Control de llamado"},{f:"10/3",op:"Jara, Lucia Soledad",m:"Falta de respuesta supervisor"},{f:"10/3",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"10/3",op:"Antunez, Cecilia",m:"Cliente conflictivo"},{f:"10/3",op:"Velazquez, Cynthia",m:"Falta de respuesta supervisor"},{f:"10/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"10/3",op:"Jimenez Ballesteros, Maria Angelica",m:"Reclamo reiterado de segunda línea"},{f:"10/3",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"10/3",op:"Falcon, Macancela Melissa",m:"Cliente conflictivo"},{f:"10/3",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"10/3",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"10/3",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"10/3",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"10/3",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"10/3",op:"Hernandez, Cristian",m:"Falta de respuesta supervisor"},{f:"11/3",op:"Menendez, Cinthya",m:"Reclamo reiterado de segunda línea"},{f:"11/3",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"11/3",op:"Blasco, Mariana Lorena",m:"Reclamo reiterado de segunda línea"},{f:"11/3",op:"Falcon, Macancela Melissa",m:"Reclamo reiterado de segunda línea"},{f:"11/3",op:"Jara, Lucia Soledad",m:"Reclamo reiterado de segunda línea"},{f:"11/3",op:"Jara, Lucia Soledad",m:"Reclamo reiterado de segunda línea"},{f:"11/3",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"11/3",op:"Las Heras, Marina",m:"Reclamo reiterado de segunda línea"},{f:"11/3",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"11/3",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"12/3",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"12/3",op:"Velazquez, Cynthia",m:"Reclamo reiterado de segunda línea"},{f:"12/3",op:"Alfonso, Angel Agustin",m:"Cliente conflictivo"},{f:"12/3",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"12/3",op:"Menendez, Cinthya",m:"Reclamo reiterado de segunda línea"},{f:"12/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"12/3",op:"Munos, Debora",m:"Reclamo reiterado de segunda línea"},{f:"13/3",op:"Falcon, Macancela Melissa",m:"Reclamo reiterado de segunda línea"},{f:"13/3",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"13/3",op:"Jara, Lucia Soledad",m:"Reclamo reiterado de segunda línea"},{f:"13/3",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"13/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"13/3",op:"Antunez, Cecilia",m:"Cliente conflictivo"},{f:"14/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"14/3",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"14/3",op:"Blasco, Mariana Lorena",m:"Falta de Control de llamado"},{f:"16/3",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"17/3",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"17/3",op:"Velazquez, Cynthia",m:"Cliente conflictivo"},{f:"17/3",op:"Antunez, Cecilia",m:"Cliente conflictivo"},{f:"17/3",op:"Velazquez, Cynthia",m:"Reclamo reiterado de segunda línea"},{f:"17/3",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"17/3",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"18/3",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"18/3",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"18/3",op:"Antunez, Cecilia",m:"Cliente conflictivo"},{f:"18/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"19/3",op:"Antunez, Cecilia",m:"Cliente conflictivo"},{f:"20/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"20/3",op:"Las Heras, Marina",m:"Falta de Control de llamado"},{f:"20/3",op:"Blasco, Mariana Lorena",m:"Reclamo reiterado de segunda línea"},{f:"20/3",op:"Jorge, Marcos Santiago",m:"Reclamo reiterado de segunda línea"},{f:"20/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"20/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"21/3",op:"Jorge, Marcos Santiago",m:"Reclamo reiterado de segunda línea"},{f:"21/3",op:"Guglielmi, Romina",m:"Reclamo reiterado de segunda línea"},{f:"23/3",op:"Jara, Lucia Soledad",m:"Reclamo reiterado de segunda línea"},{f:"23/3",op:"Antunez, Cecilia",m:"Cliente conflictivo"},{f:"26/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"26/3",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"26/3",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"27/3",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"27/3",op:"Las Heras, Marina",m:"Falta de Control de llamado"},{f:"27/3",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"27/3",op:"Antunez, Cecilia",m:"Falta de respuesta supervisor"},{f:"28/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"30/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"30/3",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},
+  {f:"1/4",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"1/4",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"1/4",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"1/4",op:"Gonzalez, Valeria Silvana",m:"Reclamo reiterado de segunda línea"},{f:"4/4",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"7/4",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"7/4",op:"Velazquez, Cynthia",m:"Cliente conflictivo"},{f:"8/4",op:"Gonzalez, Valeria Silvana",m:"Cliente conflictivo"},{f:"8/4",op:"Velazquez, Cynthia",m:"Cliente conflictivo"},{f:"8/4",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"8/4",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"8/4",op:"Antunez, Cecilia",m:"Falta de Control de llamado"},{f:"9/4",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"10/4",op:"Gonzalez, Valeria Silvana",m:"Falta de Control de llamado"},{f:"10/4",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"10/4",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"11/4",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"11/4",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"13/4",op:"Blasco, Mariana Lorena",m:"Falta de Control de llamado"},{f:"13/4",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"13/4",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"13/4",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"14/4",op:"Jara, Lucia Soledad",m:"Reclamo reiterado de segunda línea"},{f:"14/4",op:"Maidana, Aldana Yamila",m:"Cliente conflictivo"},{f:"14/4",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"14/4",op:"Las Heras, Marina",m:"Reclamo reiterado de segunda línea"},{f:"15/4",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"15/4",op:"Gonzalez, Valeria Silvana",m:"Cliente conflictivo"},{f:"16/4",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"17/4",op:"Blasco, Mariana Lorena",m:"Reclamo reiterado de segunda línea"},{f:"17/4",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"17/4",op:"Munos, Debora",m:"Reclamo reiterado de segunda línea"},{f:"17/4",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"20/4",op:"Blasco, Mariana Lorena",m:"Reclamo reiterado de segunda línea"},{f:"21/4",op:"Huacaña Sanchez, Marcela",m:"Cliente conflictivo"},{f:"21/4",op:"Maidana, Aldana Yamila",m:"Reclamo reiterado de segunda línea"},{f:"21/4",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"21/4",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"22/4",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"22/4",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"23/4",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"23/4",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"24/4",op:"Jorge, Marcos Santiago",m:"Reclamo reiterado de segunda línea"},{f:"24/4",op:"Las Heras, Marina",m:"Falta de Control de llamado"},{f:"27/4",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"27/4",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"27/4",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"27/4",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"27/4",op:"Antunez, Cecilia",m:"Cliente conflictivo"},{f:"27/4",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"27/4",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"28/4",op:"Velazquez, Cynthia",m:"Cliente conflictivo"},{f:"28/4",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"28/4",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"29/4",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},
+  {f:"2/5",op:"Coronel, Yanina Mariana",m:"Reclamo reiterado de segunda línea"},{f:"4/5",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"4/5",op:"Hernandez, Cristian",m:"Reclamo reiterado de segunda línea"},{f:"4/5",op:"Hernandez, Cristian",m:"Reclamo reiterado de segunda línea"},{f:"4/5",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"5/5",op:"Jorge, Marcos Santiago",m:"Reclamo reiterado de segunda línea"},{f:"5/5",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"5/5",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"6/5",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"6/5",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"6/5",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"6/5",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"6/5",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"6/5",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"6/5",op:"Blasco, Mariana Lorena",m:"Reclamo reiterado de segunda línea"},{f:"6/5",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"6/5",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"6/5",op:"Munos, Debora",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Munos, Debora",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Las Heras, Marina",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Antunez, Cecilia",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Falcon, Macancela Melissa",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Blasco, Mariana Lorena",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Jorge, Marcos Santiago",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Las Heras, Marina",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Maidana, Aldana Yamila",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Blasco, Mariana Lorena",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Munos, Debora",m:"Reclamo reiterado de segunda línea"},
+];
+
+function calMes(d){return d.f.split('/')[1];}
+const calByMes={2:[],3:[],4:[],5:[]};
+CAL.forEach(d=>{const m=parseInt(calMes(d));if(calByMes[m])calByMes[m].push(d);});
+function calCountBy(data,key){const r={};data.forEach(d=>{const v=d[key];r[v]=(r[v]||0)+1;});return r;}
+function calSort(obj){return Object.entries(obj).sort((a,b)=>b[1]-a[1]);}
+const PURPLE_RAMP=["#26215C","#3C3489","#534AB7","#6D5FCC","#7F77DD","#9D96E6","#AFA9EC","#C8C4F3","#DDDAF8","#EEEDFE"];
+function purpleScale(i,total){const idx=Math.round((i/(Math.max(total-1,1)))*(PURPLE_RAMP.length-1));return PURPLE_RAMP[Math.min(idx,PURPLE_RAMP.length-1)];}
+function calColorByRank(count){return count.map((_,i)=>purpleScale(i,count.length));}
+
+const totalOps=calCountBy(CAL,"op");
+const sortedOps=calSort(totalOps);
+const opLabels=sortedOps.map(x=>x[0]);
+const opVals=sortedOps.map(x=>x[1]);
+const opColors=calColorByRank(opVals);
+const topOp=sortedOps[0];
+const MOTIVOS=["Cliente conflictivo","Reclamo reiterado de segunda línea","Falta de Control de llamado","Falta de respuesta supervisor"];
+const MCOLORS=["#1D6FA5","#C0392B","#0F6E56","#854F0B"];
+const totalMotivos=calCountBy(CAL,"m");
+
+document.getElementById('cal_metrics').innerHTML=`
+  <div class="metric"><div class="metric-label">Total</div><div class="metric-value">${CAL.length}</div><div class="metric-sub">feb–may</div></div>
+  <div class="metric"><div class="metric-label">Febrero</div><div class="metric-value">${calByMes[2].length}</div><div class="metric-sub">derivaciones</div></div>
+  <div class="metric"><div class="metric-label">Marzo</div><div class="metric-value">${calByMes[3].length}</div><div class="metric-sub">derivaciones</div></div>
+  <div class="metric"><div class="metric-label">Abril</div><div class="metric-value">${calByMes[4].length}</div><div class="metric-sub">derivaciones</div></div>
+  <div class="metric"><div class="metric-label">Mayo</div><div class="metric-value">${calByMes[5].length}</div><div class="metric-sub">derivaciones</div></div>
+  <div class="metric"><div class="metric-label">Mayor derivador</div><div class="metric-value" style="font-size:13px;margin-top:2px;">${topOp[0].split(',')[0]}</div><div class="metric-sub">${topOp[1]} casos</div></div>
+`;
+
+const calCd={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}};
+
+new Chart(document.getElementById('cc_total'),{type:'bar',data:{labels:opLabels,datasets:[{label:'Derivaciones',data:opVals,backgroundColor:opColors,borderRadius:3}]},options:{...calCd,indexAxis:'y',scales:{x:{ticks:{font:{size:11}},grid:{color:'rgba(0,0,0,0.04)'}},y:{ticks:{font:{size:11}}}},plugins:{...calCd.plugins,datalabels:{display:false},tooltip:{callbacks:{label:c=>` ${c.raw} derivaciones`}}},layout:{padding:{right:30}}},plugins:[{id:'barLabels',afterDatasetsDraw(chart){const ctx=chart.ctx;chart.data.datasets.forEach((ds,di)=>{const meta=chart.getDatasetMeta(di);meta.data.forEach((bar,i)=>{const val=ds.data[i];const x=bar.x+5;const y=bar.y;ctx.save();ctx.fillStyle='#444';ctx.font='bold 11px DM Sans, sans-serif';ctx.textBaseline='middle';ctx.fillText(val,x,y);ctx.restore();});});}}]});
+
+new Chart(document.getElementById('cc_evol'),{type:'line',data:{labels:["Febrero","Marzo","Abril","Mayo"],datasets:[{label:'Derivaciones',data:[calByMes[2].length,calByMes[3].length,calByMes[4].length,calByMes[5].length],borderColor:'#1D6FA5',backgroundColor:'rgba(29,111,165,0.08)',borderWidth:2,pointBackgroundColor:'#1D6FA5',pointRadius:5,tension:0.3,fill:true}]},options:{...calCd,scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11}},beginAtZero:true}},plugins:{...calCd.plugins,tooltip:{callbacks:{label:c=>` ${c.raw} derivaciones`}}}}});
+
+const motLeg=document.getElementById('cc_motleg');
+MOTIVOS.forEach((m,i)=>{motLeg.innerHTML+=`<div style="display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;border-radius:2px;background:${MCOLORS[i]};flex-shrink:0;"></span><span>${m} <strong>(${totalMotivos[m]||0})</strong></span></div>`;});
+new Chart(document.getElementById('cc_motivos'),{type:'doughnut',data:{labels:MOTIVOS,datasets:[{data:MOTIVOS.map(m=>totalMotivos[m]||0),backgroundColor:MCOLORS,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label}: ${c.raw}`}}}}});
+
+new Chart(document.getElementById('cc_motmes'),{type:'bar',data:{labels:["Febrero","Marzo","Abril","Mayo"],datasets:MOTIVOS.map((m,i)=>({label:m,data:[2,3,4,5].map(mn=>calByMes[mn].filter(d=>d.m===m).length),backgroundColor:MCOLORS[i],borderRadius:3}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:10,padding:12}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11}},beginAtZero:true}}}});
+
+function makeCalMonth(canvasId,lblId,mesNum){
+  const data=calByMes[mesNum];
+  const cnt=calCountBy(data,"op");
+  const sorted=calSort(cnt);
+  const labels=sorted.map(x=>x[0]);
+  const vals=sorted.map(x=>x[1]);
+  document.getElementById(lblId).textContent=`${data.length} derivaciones totales`;
+  new Chart(document.getElementById(canvasId),{type:'bar',data:{labels,datasets:[{label:'Derivaciones',data:vals,backgroundColor:calColorByRank(vals),borderRadius:3}]},options:{...calCd,indexAxis:'y',scales:{x:{ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}},y:{ticks:{font:{size:10}}}},plugins:{...calCd.plugins,tooltip:{callbacks:{label:c=>` ${c.raw} derivaciones`}}},layout:{padding:{right:30}}},plugins:[{id:'barLabels'+mesNum,afterDatasetsDraw(chart){const ctx=chart.ctx;chart.data.datasets.forEach((ds,di)=>{const meta=chart.getDatasetMeta(di);meta.data.forEach((bar,i)=>{const val=ds.data[i];const x=bar.x+5;const y=bar.y;ctx.save();ctx.fillStyle='#444';ctx.font='bold 10px DM Sans, sans-serif';ctx.textBaseline='middle';ctx.fillText(val,x,y);ctx.restore();});});}}]});
+}
+makeCalMonth('cc_feb','lbl_feb',2);
+makeCalMonth('cc_mar','lbl_mar',3);
+makeCalMonth('cc_abr','lbl_abr',4);
+makeCalMonth('cc_may','lbl_may',5);
 </script>
 </body>
 </html>
