@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Frávega SAC — Reporte Diario</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.08);
+    --text: #1a1a1a;
+    --text-muted: #666;
+    --text-faint: #999;
+    --green: #2d7a4f;
+    --green-light: #e8f5ee;
+    --amber: #b45309;
+    --amber-light: #fef3c7;
+    --red: #c0392b;
+    --red-light: #fdecea;
+    --blue: #1d4ed8;
+    --blue-light: #e8f0fe;
+    --purple: #6d28d9;
+    --teal: #0f766e;
+    --coral: #c2410c;
+    --gold: #92400e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .top-bar { background: var(--text); color: white; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+  .top-bar .brand { font-size: 13px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.9; }
+  .top-bar .date { font-family: 'DM Mono', monospace; font-size: 12px; opacity: 0.6; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .page-header { margin-bottom: 2rem; }
+  .page-header h1 { font-size: 26px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .page-header p { font-size: 14px; color: var(--text-muted); }
+  .badge { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 99px; font-weight: 500; margin-top: 8px; background: var(--blue-light); color: var(--blue); }
+  .metrics { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin-bottom: 2rem; }
+  .metric { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .metric-label { font-size: 10px; font-weight: 500; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .metric-value { font-size: 24px; font-weight: 600; color: var(--text); line-height: 1; }
+  .metric-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .tab-bar { display: flex; gap: 4px; margin-bottom: 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 4px; width: fit-content; }
+  .tab { font-size: 13px; padding: 6px 18px; border-radius: 7px; border: none; cursor: pointer; background: transparent; color: var(--text-muted); font-family: inherit; font-weight: 400; transition: all 0.15s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { background: var(--text); color: white; font-weight: 500; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; }
+  .card.full { grid-column: 1 / -1; }
+  .card-title { font-size: 12px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 12px; font-size: 12px; color: var(--text-muted); }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .ldot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  /* Objetivos */
+  .sem-grid { display: flex; flex-direction: column; gap: 10px; }
+  .sem-row { display: grid; grid-template-columns: 200px 1fr 52px 70px; align-items: center; gap: 12px; font-size: 12px; }
+  .sem-name { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+  .bar-bg { background: #f0efeb; border-radius: 99px; height: 8px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 99px; }
+  .sem-calls { font-weight: 600; text-align: right; font-family: 'DM Mono', monospace; font-size: 12px; }
+  .pill { display: inline-block; font-size: 10px; padding: 3px 10px; border-radius: 99px; font-weight: 500; text-align: center; }
+  .pill-ok { background: var(--green-light); color: var(--green); }
+  .pill-warn { background: var(--amber-light); color: var(--amber); }
+  .pill-bad { background: var(--red-light); color: var(--red); }
+  .aht-grid { display: flex; flex-direction: column; gap: 10px; }
+  .aht-row { display: grid; grid-template-columns: 200px 1fr 58px 68px; align-items: center; gap: 12px; font-size: 12px; }
+  .aht-bar-wrap { position: relative; height: 8px; }
+  .aht-bar-bg { background: #f0efeb; border-radius: 99px; height: 8px; }
+  .aht-bar-fill { height: 100%; border-radius: 99px; }
+  .aht-mark { position: absolute; top: -4px; width: 2px; height: 16px; background: var(--red); border-radius: 1px; }
+  /* Tabla */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; color: var(--text-muted); font-weight: 500; padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--border); font-family: 'DM Mono', monospace; font-size: 11px; }
+  td:first-child { font-family: 'DM Sans', sans-serif; font-size: 12px; }
+  tr:hover td { background: #fafaf8; }
+  .footer { text-align: center; font-size: 11px; color: var(--text-faint); margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <span class="brand">Frávega SAC · Dashboard de operaciones</span>
+  <span class="date" id="topdate"></span>
+</div>
+
+<div class="container">
+  <div class="page-header">
+    <h1>Reporte diario del equipo</h1>
+    <p>Supervisión de 18 agentes activos · Campaña Frávega SAC</p>
+    <span class="badge" id="daybadge"></span>
+  </div>
+
+  <div class="metrics" id="metrics"></div>
+
+  <div class="tab-bar">
+    <button class="tab active" onclick="showTab('graficos',this)">Gráficos</button>
+    <button class="tab" onclick="showTab('objetivos',this)">Objetivos</button>
+    <button class="tab" onclick="showTab('tabla',this)">Tabla detalle</button>
+    <button class="tab" onclick="showTab('calidad',this)">Calidad</button>
+  </div>
+
+  <div id="graficos" class="section active">
+    <div class="charts-grid">
+      <div class="card full">
+        <div class="card-title">Llamadas atendidas por agente</div>
+        <div class="legend">
+          <span><span class="ldot" style="background:#1d4ed8"></span>Cumplió objetivo ≥60</span>
+          <span><span class="ldot" style="background:#93c5fd"></span>Bajo objetivo</span>
+          <span><span class="ldot" style="background:#fca5a5"></span>Fichas time out</span>
+          <span style="margin-left:auto;font-size:11px;color:#999;">línea roja = objetivo 60</span>
+        </div>
+        <div style="position:relative;width:100%;height:420px;"><canvas id="c1" role="img" aria-label="Llamadas por agente">Llamadas conectadas y fichas time out por agente.</canvas></div>
+      </div>
+      <div class="card full">
+        <div class="card-title">AHT por agente — verde: dentro del objetivo · rojo: sobre 4:30 min</div>
+        <div style="position:relative;width:100%;height:380px;"><canvas id="c2" role="img" aria-label="AHT por agente">AHT en minutos por agente.</canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Distribución tiempos auxiliares (promedio equipo)</div>
+        <div class="legend" id="leg3"></div>
+        <div style="position:relative;width:100%;height:220px;"><canvas id="c3" role="img" aria-label="Tiempos auxiliares">Distribución de tiempos auxiliares.</canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Tiempo de login por agente (horas)</div>
+        <div style="position:relative;width:100%;height:380px;"><canvas id="c4" role="img" aria-label="Login por agente">Login en horas por agente.</canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Postview por agente (minutos)</div>
+        <div style="position:relative;width:100%;height:380px;"><canvas id="c5" role="img" aria-label="Postview por agente">Postview en minutos por agente.</canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Fichas time out — verde &lt;5 · amarillo 5-9 · rojo ≥10</div>
+        <div style="position:relative;width:100%;height:380px;"><canvas id="c6" role="img" aria-label="Fichas time out">Fichas time out con semáforo.</canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="objetivos" class="section">
+    <div class="charts-grid">
+      <div class="card full">
+        <div class="card-title">Semáforo de llamadas — objetivo: 60 llamadas diarias</div>
+        <div class="legend">
+          <span><span class="ldot" style="background:#2d7a4f"></span>Cumplió (≥60)</span>
+          <span><span class="ldot" style="background:#d97706"></span>Cerca (45–59)</span>
+          <span><span class="ldot" style="background:#c0392b"></span>Bajo (&lt;45)</span>
+        </div>
+        <div class="sem-grid" id="semaforo"></div>
+      </div>
+      <div class="card full">
+        <div class="card-title">AHT real vs objetivo 4:30 — ordenado de menor a mayor · línea roja = límite</div>
+        <div class="aht-grid" id="ahtcompare"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Cumplimiento del equipo — llamadas</div>
+        <div style="position:relative;width:100%;height:220px;"><canvas id="c7" role="img" aria-label="Cumplimiento llamadas">Torta cumplimiento de llamadas.</canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Distribución AHT vs objetivo</div>
+        <div style="position:relative;width:100%;height:220px;"><canvas id="c8" role="img" aria-label="AHT vs objetivo">Torta AHT vs objetivo.</canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tabla" class="section">
+    <div class="card">
+      <div class="card-title">Detalle completo por agente</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Agente</th><th>Llamadas</th><th>Obj 60</th><th>AHT</th><th>Obj 4:30</th><th>Login</th><th>Auxiliar</th><th>Supervisor</th><th>BackOffice</th><th>Postview</th><th>Time Out</th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="calidad" class="section">
+    <div class="charts-grid">
+
+      <div class="card full">
+        <div class="card-title">Métricas de derivaciones — feb a may 2026</div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;" id="cal_metrics"></div>
+      </div>
+
+      <div class="card full">
+        <div class="card-title">Total de derivaciones por operador — feb a may 2026</div>
+        <div class="legend">
+          <span><span class="ldot" style="background:#6B2D8B"></span>Mayor cantidad</span>
+          <span><span class="ldot" style="background:#AB63CE"></span>Cantidad media</span>
+          <span><span class="ldot" style="background:#F5EEFA"></span>Menor cantidad</span>
+        </div>
+        <div style="position:relative;width:100%;height:540px;"><canvas id="cc_total" role="img" aria-label="Total derivaciones por operador">Total de derivaciones a supervisor por operador.</canvas></div>
+      </div>
+
+      <div class="card full">
+        <div class="card-title">Evolución mensual de derivaciones</div>
+        <div style="position:relative;width:100%;height:260px;"><canvas id="cc_evol" role="img" aria-label="Evolución mensual">Evolución mensual del total de derivaciones.</canvas></div>
+      </div>
+
+      <div class="card full">
+        <div class="card-title">Motivos de derivación por mes</div>
+        <div style="position:relative;width:100%;height:280px;"><canvas id="cc_motmes" role="img" aria-label="Motivos por mes">Motivos de derivación agrupados por mes.</canvas></div>
+      </div>
+
+      <div class="card full">
+        <div class="card-title">Distribución total de motivos</div>
+        <div style="display:flex;gap:2rem;align-items:center;">
+          <div style="position:relative;width:260px;height:240px;flex-shrink:0;"><canvas id="cc_motivos" role="img" aria-label="Distribución motivos">Distribución de motivos acumulados.</canvas></div>
+          <div id="cc_motleg" style="font-size:12px;display:flex;flex-direction:column;gap:10px;color:var(--text-muted);"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Febrero 2026</div>
+        <div id="lbl_feb" style="font-size:12px;color:var(--text-muted);margin-bottom:8px;"></div>
+        <div style="position:relative;width:100%;height:400px;"><canvas id="cc_feb" role="img" aria-label="Derivaciones febrero">Derivaciones por operador en febrero.</canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Marzo 2026</div>
+        <div id="lbl_mar" style="font-size:12px;color:var(--text-muted);margin-bottom:8px;"></div>
+        <div style="position:relative;width:100%;height:400px;"><canvas id="cc_mar" role="img" aria-label="Derivaciones marzo">Derivaciones por operador en marzo.</canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Abril 2026</div>
+        <div id="lbl_abr" style="font-size:12px;color:var(--text-muted);margin-bottom:8px;"></div>
+        <div style="position:relative;width:100%;height:400px;"><canvas id="cc_abr" role="img" aria-label="Derivaciones abril">Derivaciones por operador en abril.</canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Mayo 2026</div>
+        <div id="lbl_may" style="font-size:12px;color:var(--text-muted);margin-bottom:8px;"></div>
+        <div style="position:relative;width:100%;height:400px;"><canvas id="cc_may" role="img" aria-label="Derivaciones mayo">Derivaciones por operador en mayo.</canvas></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer">Dashboard generado con Claude · Frávega Ventas y Atención al Cliente</div>
+</div>
+
+<script>
+const DATA = [
+  {n:"Huacaña Sanchez, Marcela",date:"04/05/2026",calls:47,aht:"00:04:08",login:"6:01:24",aux:"0:17:37",sup:"0:08:30",bo:"0:23:07",pv:"0:26:56",to:0},
+  {n:"Iturria, María",date:"04/05/2026",calls:32,aht:"00:06:31",login:"5:56:39",aux:"0:16:05",sup:"0:00:00",bo:"0:43:43",pv:"0:04:25",to:4},
+  {n:"Falcon Macancela, Melissa",date:"04/05/2026",calls:39,aht:"00:06:05",login:"5:57:33",aux:"0:13:07",sup:"0:20:59",bo:"0:21:08",pv:"0:13:28",to:1},
+  {n:"Coronel, Yanina Mariana",date:"04/05/2026",calls:36,aht:"00:03:39",login:"8:57:08",aux:"0:10:01",sup:"0:09:29",bo:"0:18:02",pv:"0:26:38",to:2},
+  {n:"Gonzalez, Valeria Silvana",date:"04/05/2026",calls:44,aht:"00:04:49",login:"6:02:22",aux:"0:17:29",sup:"0:36:20",bo:"0:35:32",pv:"0:15:46",to:10},
+  {n:"Guiroy, Veronica Pamela",date:"04/05/2026",calls:94,aht:"00:04:31",login:"9:03:05",aux:"0:06:05",sup:"0:05:27",bo:"0:18:36",pv:"0:32:53",to:1},
+  {n:"Guglielmi, Romina",date:"04/05/2026",calls:51,aht:"00:05:18",login:"5:35:47",aux:"0:09:07",sup:"0:00:00",bo:"0:09:34",pv:"0:13:14",to:6},
+  {n:"Maidana, Aldana Yamila",date:"04/05/2026",calls:55,aht:"00:04:06",login:"5:59:00",aux:"0:03:10",sup:"0:00:00",bo:"0:18:04",pv:"0:33:05",to:1},
+  {n:"Menendez, Cinthya",date:"04/05/2026",calls:89,aht:"00:03:31",login:"8:16:39",aux:"0:14:11",sup:"0:17:27",bo:"0:11:52",pv:"0:56:15",to:9},
+  {n:"Munos, Debora",date:"04/05/2026",calls:39,aht:"00:04:21",login:"5:59:26",aux:"0:14:21",sup:"0:00:00",bo:"0:44:06",pv:"0:15:23",to:1},
+  {n:"Molina, Viviana",date:"04/05/2026",calls:43,aht:"00:05:42",login:"6:00:35",aux:"0:18:06",sup:"0:00:00",bo:"0:24:30",pv:"0:18:28",to:3},
+  {n:"Jimenez Ballesteros, Maria Angelica",date:"04/05/2026",calls:43,aht:"00:03:53",login:"6:00:05",aux:"0:19:52",sup:"0:13:28",bo:"0:21:55",pv:"1:09:50",to:1},
+  {n:"Las Heras, Marina",date:"04/05/2026",calls:36,aht:"00:06:46",login:"6:10:47",aux:"0:02:57",sup:"0:12:13",bo:"0:25:34",pv:"0:09:26",to:0},
+  {n:"Hernandez, Cristian",date:"04/05/2026",calls:62,aht:"00:04:04",login:"5:59:53",aux:"0:11:04",sup:"0:00:00",bo:"0:28:35",pv:"0:21:36",to:7},
+  {n:"Jorge, Marcos Santiago",date:"04/05/2026",calls:36,aht:"00:05:39",login:"5:59:47",aux:"0:15:30",sup:"1:05:58",bo:"0:20:13",pv:"0:09:04",to:0},
+  {n:"Alfonso, Angel Agustin",date:"04/05/2026",calls:42,aht:"00:04:12",login:"5:55:01",aux:"0:23:37",sup:"0:49:25",bo:"0:04:34",pv:"0:10:26",to:16},
+  {n:"Jara, Lucia Soledad",date:"04/05/2026",calls:37,aht:"00:04:34",login:"4:32:01",aux:"0:18:33",sup:"0:00:00",bo:"0:16:26",pv:"0:20:06",to:2},
+  {n:"Antunez, Cecilia",date:"04/05/2026",calls:52,aht:"00:04:09",login:"5:59:48",aux:"0:09:42",sup:"0:00:00",bo:"0:51:04",pv:"0:32:18",to:1},
+];
+
+const OBJ_CALLS=60, OBJ_AHT=4.5;
+const FECHA="Lunes 04 de mayo de 2026";
+
+document.getElementById('topdate').textContent = new Date().toLocaleDateString('es-AR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+document.getElementById('daybadge').textContent = FECHA;
+
+function toSec(s){if(!s)return 0;const p=s.trim().split(':');if(p.length===3)return+p[0]*3600+ +p[1]*60+parseFloat(p[2]);return+p[0]*60+parseFloat(p[1]);}
+function fmtMin(sec){const m=Math.floor(sec/60),s=Math.round(sec%60);return m+'m '+String(s).padStart(2,'0')+'s';}
+function fmtHrs(sec){return(sec/3600).toFixed(1)+'h';}
+function ahtMin(str){return Math.round(toSec(str)/60*100)/100;}
+
+const raw=DATA;
+const ahtSec=raw.map(r=>toSec(r.aht));
+const loginSec=raw.map(r=>toSec(r.login));
+const auxSec=raw.map(r=>toSec(r.aux));
+const supSec=raw.map(r=>toSec(r.sup));
+const boSec=raw.map(r=>toSec(r.bo));
+const pvSec=raw.map(r=>toSec(r.pv));
+const fullLabels=raw.map(r=>r.n);
+
+const totalCalls=raw.reduce((a,r)=>a+r.calls,0);
+const avgAHT=ahtSec.reduce((a,v)=>a+v,0)/raw.length;
+const totalTO=raw.reduce((a,r)=>a+r.to,0);
+const avgLogin=loginSec.reduce((a,v)=>a+v,0)/raw.length;
+const cumplio=raw.filter(r=>r.calls>=OBJ_CALLS).length;
+const cumplioAHT=raw.filter(r=>ahtMin(r.aht)<=OBJ_AHT).length;
+
+document.getElementById('metrics').innerHTML=`
+  <div class="metric"><div class="metric-label">Agentes</div><div class="metric-value">${raw.length}</div><div class="metric-sub">activos</div></div>
+  <div class="metric"><div class="metric-label">Llamadas</div><div class="metric-value">${totalCalls}</div><div class="metric-sub">conectadas</div></div>
+  <div class="metric"><div class="metric-label">AHT prom.</div><div class="metric-value" style="font-size:18px;">${fmtMin(avgAHT)}</div><div class="metric-sub">obj: 4:30</div></div>
+  <div class="metric"><div class="metric-label">Time out</div><div class="metric-value">${totalTO}</div><div class="metric-sub">fichas</div></div>
+  <div class="metric"><div class="metric-label">Login prom.</div><div class="metric-value" style="font-size:18px;">${fmtHrs(avgLogin)}</div><div class="metric-sub">por agente</div></div>
+  <div class="metric"><div class="metric-label">Obj llamadas</div><div class="metric-value">${cumplio}<span style="font-size:14px;color:#999;">/${raw.length}</span></div><div class="metric-sub">agentes ≥60</div></div>
+  <div class="metric"><div class="metric-label">Obj AHT</div><div class="metric-value">${cumplioAHT}<span style="font-size:14px;color:#999;">/${raw.length}</span></div><div class="metric-sub">agentes ≤4:30</div></div>
+`;
+
+const cd={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}};
+
+new Chart(document.getElementById('c1'),{type:'bar',data:{labels:fullLabels,datasets:[
+  {label:'Llamadas',data:raw.map(r=>r.calls),backgroundColor:raw.map(r=>r.calls>=OBJ_CALLS?'#1d4ed8':'#93c5fd'),borderRadius:4},
+  {label:'Time out',data:raw.map(r=>r.to),backgroundColor:'#fca5a5',borderRadius:4}
+]},options:{...cd,indexAxis:'y',scales:{x:{ticks:{font:{size:11}},grid:{color:'rgba(0,0,0,0.04)'},afterDataLimits(s){s.max=Math.max(s.max,65);}},y:{ticks:{font:{size:11}}}},plugins:{...cd.plugins,annotation:{annotations:{obj:{type:'line',xMin:60,xMax:60,borderColor:'#c0392b',borderWidth:2,borderDash:[6,4]}}}}}});
+
+new Chart(document.getElementById('c2'),{type:'bar',data:{labels:fullLabels,datasets:[{label:'AHT (min)',data:ahtSec.map(s=>Math.round(s/60*100)/100),backgroundColor:ahtSec.map(s=>s/60>OBJ_AHT?'#c0392b':'#2d7a4f'),borderRadius:4}]},options:{...cd,indexAxis:'y',scales:{x:{ticks:{font:{size:11},callback:v=>v+'m'},grid:{color:'rgba(0,0,0,0.04)'}},y:{ticks:{font:{size:11}}}},plugins:{...cd.plugins,tooltip:{callbacks:{label:c=>' '+fmtMin(c.raw*60)}}}}});
+
+const avgAux=auxSec.reduce((a,v)=>a+v,0)/raw.length;
+const avgSup=supSec.reduce((a,v)=>a+v,0)/raw.length;
+const avgBo=boSec.reduce((a,v)=>a+v,0)/raw.length;
+const avgPv=pvSec.reduce((a,v)=>a+v,0)/raw.length;
+document.getElementById('leg3').innerHTML=`
+  <span><span class="ldot" style="background:#6d28d9"></span>Auxiliar ${fmtMin(avgAux)}</span>
+  <span><span class="ldot" style="background:#c2410c"></span>Supervisor ${fmtMin(avgSup)}</span>
+  <span><span class="ldot" style="background:#1d4ed8"></span>BackOffice ${fmtMin(avgBo)}</span>
+  <span><span class="ldot" style="background:#0f766e"></span>Postview ${fmtMin(avgPv)}</span>
+`;
+new Chart(document.getElementById('c3'),{type:'doughnut',data:{labels:['Auxiliar','Supervisor','BackOffice','Postview'],datasets:[{data:[avgAux,avgSup,avgBo,avgPv].map(v=>Math.round(v)),backgroundColor:['#6d28d9','#c2410c','#1d4ed8','#0f766e'],borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtMin(c.raw)}}}}});
+
+new Chart(document.getElementById('c4'),{type:'bar',data:{labels:fullLabels,datasets:[{label:'Login',data:loginSec.map(s=>Math.round(s/360)/10),backgroundColor:'#6d28d9',borderRadius:4}]},options:{...cd,indexAxis:'y',scales:{x:{ticks:{font:{size:11},callback:v=>v+'h'},grid:{color:'rgba(0,0,0,0.04)'}},y:{ticks:{font:{size:11}}}}}});
+
+new Chart(document.getElementById('c5'),{type:'bar',data:{labels:fullLabels,datasets:[{label:'Postview',data:pvSec.map(s=>Math.round(s/60*10)/10),backgroundColor:'#92400e',borderRadius:4}]},options:{...cd,indexAxis:'y',scales:{x:{ticks:{font:{size:11},callback:v=>v+'m'},grid:{color:'rgba(0,0,0,0.04)'}},y:{ticks:{font:{size:11}}}}}});
+
+new Chart(document.getElementById('c6'),{type:'bar',data:{labels:fullLabels,datasets:[{label:'Time Out',data:raw.map(r=>r.to),backgroundColor:raw.map(r=>r.to>=10?'#c0392b':r.to>=5?'#d97706':'#2d7a4f'),borderRadius:4}]},options:{...cd,indexAxis:'y',scales:{x:{ticks:{font:{size:11}},grid:{color:'rgba(0,0,0,0.04)'}},y:{ticks:{font:{size:11}}}}}});
+
+const semEl=document.getElementById('semaforo');
+[...raw].sort((a,b)=>b.calls-a.calls).forEach(r=>{
+  const pct=Math.min(100,Math.round(r.calls/OBJ_CALLS*100));
+  const color=r.calls>=OBJ_CALLS?'#2d7a4f':r.calls>=45?'#d97706':'#c0392b';
+  const badge=r.calls>=OBJ_CALLS?'pill-ok':r.calls>=45?'pill-warn':'pill-bad';
+  const label=r.calls>=OBJ_CALLS?'Cumplió':r.calls>=45?'Cerca':'Bajo';
+  const div=document.createElement('div');div.className='sem-row';
+  div.innerHTML=`<span class="sem-name" title="${r.n}">${r.n}</span>
+    <div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${color};"></div></div>
+    <span class="sem-calls">${r.calls}</span>
+    <span class="pill ${badge}">${label}</span>`;
+  semEl.appendChild(div);
+});
+
+const ahtEl=document.getElementById('ahtcompare');
+const maxAHT=Math.max(...ahtSec)/60;
+const markPct=Math.min(100,Math.round(OBJ_AHT/maxAHT*100));
+[...raw].sort((a,b)=>toSec(a.aht)-toSec(b.aht)).forEach(r=>{
+  const sec=toSec(r.aht);const minVal=sec/60;
+  const pct=Math.min(100,Math.round(minVal/maxAHT*100));
+  const color=minVal<=OBJ_AHT?'#2d7a4f':'#c0392b';
+  const diff=minVal-OBJ_AHT;
+  const diffStr=(diff>=0?'+':'')+diff.toFixed(2)+'m';
+  const div=document.createElement('div');div.className='aht-row';
+  div.innerHTML=`<span class="sem-name" title="${r.n}">${r.n}</span>
+    <div class="aht-bar-wrap">
+      <div class="aht-bar-bg"><div class="aht-bar-fill" style="width:${pct}%;background:${color};height:8px;border-radius:99px;"></div></div>
+      <div class="aht-mark" style="left:${markPct}%;"></div>
+    </div>
+    <span style="text-align:right;font-weight:600;font-size:11px;font-family:'DM Mono',monospace;color:${color};">${r.aht.slice(0,5)}</span>
+    <span style="text-align:right;font-size:11px;color:${diff>0?'#c0392b':'#2d7a4f'};">${diffStr}</span>`;
+  ahtEl.appendChild(div);
+});
+
+const cerca=raw.filter(r=>r.calls>=45&&r.calls<60).length;
+const bajo=raw.filter(r=>r.calls<45).length;
+new Chart(document.getElementById('c7'),{type:'doughnut',data:{labels:[`Cumplió ≥60 (${cumplio})`,`Cerca 45–59 (${cerca})`,`Bajo <45 (${bajo})`],datasets:[{data:[cumplio,cerca,bajo],backgroundColor:['#2d7a4f','#d97706','#c0392b'],borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:10,padding:12}}}}});
+new Chart(document.getElementById('c8'),{type:'doughnut',data:{labels:[`En objetivo ≤4:30 (${cumplioAHT})`,`Sobre objetivo (${raw.length-cumplioAHT})`],datasets:[{data:[cumplioAHT,raw.length-cumplioAHT],backgroundColor:['#2d7a4f','#c0392b'],borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:10,padding:12}}}}});
+
+const tbody=document.getElementById('tbody');
+raw.forEach(r=>{
+  const aMin=ahtMin(r.aht);
+  const cb=r.calls>=60?'pill-ok':r.calls>=45?'pill-warn':'pill-bad';
+  const ab=aMin<=OBJ_AHT?'pill-ok':'pill-bad';
+  const tb=r.to===0?'pill-ok':r.to<5?'pill-warn':'pill-bad';
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td>${r.n}</td><td>${r.calls}</td><td><span class="pill ${cb}">${r.calls>=60?'✓':r.calls+'/60'}</span></td><td>${r.aht.slice(0,8)}</td><td><span class="pill ${ab}">${aMin<=OBJ_AHT?'✓':'+'+(aMin-OBJ_AHT).toFixed(2)+'m'}</span></td><td>${r.login}</td><td>${r.aux}</td><td>${r.sup}</td><td>${r.bo}</td><td>${r.pv}</td><td><span class="pill ${tb}">${r.to}</span></td>`;
+  tbody.appendChild(tr);
+});
+
+function showTab(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+const CAL=[
+  {f:"2/2",op:"Velazquez, Cynthia",m:"Falta de Control de llamado"},{f:"2/2",op:"Hernandez, Cristian",m:"Falta de respuesta supervisor"},{f:"2/2",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"2/2",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"2/2",op:"Velazquez, Cynthia",m:"Cliente conflictivo"},{f:"3/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"3/2",op:"Falcon, Macancela Melissa",m:"Cliente conflictivo"},{f:"3/2",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"3/2",op:"Benitez, Andrea",m:"Cliente conflictivo"},{f:"3/2",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"4/2",op:"Menendez, Cinthya",m:"Cliente conflictivo"},{f:"4/2",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"4/2",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"4/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"5/2",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"5/2",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"5/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"5/2",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"5/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"6/2",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"9/2",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"9/2",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"9/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"9/2",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"9/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"9/2",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"9/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"10/2",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"10/2",op:"Coronel, Yanina Mariana",m:"Cliente conflictivo"},{f:"10/2",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"10/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"10/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"10/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"11/2",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"11/2",op:"Gonzalez, Valeria Silvana",m:"Cliente conflictivo"},{f:"11/2",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"12/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"12/2",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"12/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"13/2",op:"Coronel, Yanina Mariana",m:"Cliente conflictivo"},{f:"13/2",op:"Gonzalez, Samantha Agustina",m:"Cliente conflictivo"},{f:"13/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"13/2",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"13/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"13/2",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"13/2",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"13/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"14/2",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"18/2",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"18/2",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"18/2",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"18/2",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"18/2",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"18/2",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"18/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"18/2",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"18/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"18/2",op:"Antunez, Cecilia",m:"Cliente conflictivo"},{f:"19/2",op:"Gonzalez, Samantha Agustina",m:"Cliente conflictivo"},{f:"19/2",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"19/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"19/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"19/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"20/2",op:"Gonzalez, Samantha Agustina",m:"Cliente conflictivo"},{f:"20/2",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"21/2",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"21/2",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"23/2",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"23/2",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"23/2",op:"Maidana, Aldana Yamila",m:"Cliente conflictivo"},{f:"23/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"24/2",op:"Falcon, Macancela Melissa",m:"Cliente conflictivo"},{f:"24/2",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"24/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"25/2",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"25/2",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"25/2",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"25/2",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"26/2",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"26/2",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"27/2",op:"Alfonso, Angel Agustin",m:"Cliente conflictivo"},{f:"27/2",op:"Alfonso, Angel Agustin",m:"Cliente conflictivo"},{f:"27/2",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"27/2",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"27/2",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"28/2",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"28/2",op:"Alfonso, Angel Agustin",m:"Cliente conflictivo"},
+  {f:"2/3",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"2/3",op:"Falcon, Macancela Melissa",m:"Cliente conflictivo"},{f:"2/3",op:"Velazquez, Cynthia",m:"Cliente conflictivo"},{f:"2/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"3/3",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"3/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"3/3",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"3/3",op:"Gonzalez, Valeria Silvana",m:"Cliente conflictivo"},{f:"3/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"4/3",op:"Velazquez, Cynthia",m:"Cliente conflictivo"},{f:"4/3",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"4/3",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"4/3",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"4/3",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"4/3",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"4/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"4/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"4/3",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"4/3",op:"Velazquez, Cynthia",m:"Cliente conflictivo"},{f:"4/3",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"5/3",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"5/3",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"5/3",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"5/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"5/3",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"6/3",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"6/3",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"6/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"6/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"6/3",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"6/3",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"6/3",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"6/3",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"9/3",op:"Falcon, Macancela Melissa",m:"Cliente conflictivo"},{f:"9/3",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"9/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"9/3",op:"Alfonso, Angel Agustin",m:"Cliente conflictivo"},{f:"9/3",op:"Falcon, Macancela Melissa",m:"Cliente conflictivo"},{f:"9/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"9/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"9/3",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"10/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"10/3",op:"Velazquez, Cynthia",m:"Cliente conflictivo"},{f:"10/3",op:"Jara, Lucia Soledad",m:"Falta de Control de llamado"},{f:"10/3",op:"Jara, Lucia Soledad",m:"Falta de respuesta supervisor"},{f:"10/3",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"10/3",op:"Antunez, Cecilia",m:"Cliente conflictivo"},{f:"10/3",op:"Velazquez, Cynthia",m:"Falta de respuesta supervisor"},{f:"10/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"10/3",op:"Jimenez Ballesteros, Maria Angelica",m:"Reclamo reiterado de segunda línea"},{f:"10/3",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"10/3",op:"Falcon, Macancela Melissa",m:"Cliente conflictivo"},{f:"10/3",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"10/3",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"10/3",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"10/3",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"10/3",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"10/3",op:"Hernandez, Cristian",m:"Falta de respuesta supervisor"},{f:"11/3",op:"Menendez, Cinthya",m:"Reclamo reiterado de segunda línea"},{f:"11/3",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"11/3",op:"Blasco, Mariana Lorena",m:"Reclamo reiterado de segunda línea"},{f:"11/3",op:"Falcon, Macancela Melissa",m:"Reclamo reiterado de segunda línea"},{f:"11/3",op:"Jara, Lucia Soledad",m:"Reclamo reiterado de segunda línea"},{f:"11/3",op:"Jara, Lucia Soledad",m:"Reclamo reiterado de segunda línea"},{f:"11/3",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"11/3",op:"Las Heras, Marina",m:"Reclamo reiterado de segunda línea"},{f:"11/3",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"11/3",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"12/3",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"12/3",op:"Velazquez, Cynthia",m:"Reclamo reiterado de segunda línea"},{f:"12/3",op:"Alfonso, Angel Agustin",m:"Cliente conflictivo"},{f:"12/3",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"12/3",op:"Menendez, Cinthya",m:"Reclamo reiterado de segunda línea"},{f:"12/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"12/3",op:"Munos, Debora",m:"Reclamo reiterado de segunda línea"},{f:"13/3",op:"Falcon, Macancela Melissa",m:"Reclamo reiterado de segunda línea"},{f:"13/3",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"13/3",op:"Jara, Lucia Soledad",m:"Reclamo reiterado de segunda línea"},{f:"13/3",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"13/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"13/3",op:"Antunez, Cecilia",m:"Cliente conflictivo"},{f:"14/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"14/3",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"14/3",op:"Blasco, Mariana Lorena",m:"Falta de Control de llamado"},{f:"16/3",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"17/3",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"17/3",op:"Velazquez, Cynthia",m:"Cliente conflictivo"},{f:"17/3",op:"Antunez, Cecilia",m:"Cliente conflictivo"},{f:"17/3",op:"Velazquez, Cynthia",m:"Reclamo reiterado de segunda línea"},{f:"17/3",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"17/3",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"18/3",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"18/3",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"18/3",op:"Antunez, Cecilia",m:"Cliente conflictivo"},{f:"18/3",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"19/3",op:"Antunez, Cecilia",m:"Cliente conflictivo"},{f:"20/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"20/3",op:"Las Heras, Marina",m:"Falta de Control de llamado"},{f:"20/3",op:"Blasco, Mariana Lorena",m:"Reclamo reiterado de segunda línea"},{f:"20/3",op:"Jorge, Marcos Santiago",m:"Reclamo reiterado de segunda línea"},{f:"20/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"20/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"21/3",op:"Jorge, Marcos Santiago",m:"Reclamo reiterado de segunda línea"},{f:"21/3",op:"Guglielmi, Romina",m:"Reclamo reiterado de segunda línea"},{f:"23/3",op:"Jara, Lucia Soledad",m:"Reclamo reiterado de segunda línea"},{f:"23/3",op:"Antunez, Cecilia",m:"Cliente conflictivo"},{f:"26/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"26/3",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"26/3",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"27/3",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"27/3",op:"Las Heras, Marina",m:"Falta de Control de llamado"},{f:"27/3",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"27/3",op:"Antunez, Cecilia",m:"Falta de respuesta supervisor"},{f:"28/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"30/3",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"30/3",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},
+  {f:"1/4",op:"Molina, Viviana",m:"Cliente conflictivo"},{f:"1/4",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"1/4",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"1/4",op:"Gonzalez, Valeria Silvana",m:"Reclamo reiterado de segunda línea"},{f:"4/4",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"7/4",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"7/4",op:"Velazquez, Cynthia",m:"Cliente conflictivo"},{f:"8/4",op:"Gonzalez, Valeria Silvana",m:"Cliente conflictivo"},{f:"8/4",op:"Velazquez, Cynthia",m:"Cliente conflictivo"},{f:"8/4",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"8/4",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"8/4",op:"Antunez, Cecilia",m:"Falta de Control de llamado"},{f:"9/4",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"10/4",op:"Gonzalez, Valeria Silvana",m:"Falta de Control de llamado"},{f:"10/4",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"10/4",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"11/4",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"11/4",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"13/4",op:"Blasco, Mariana Lorena",m:"Falta de Control de llamado"},{f:"13/4",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"13/4",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"13/4",op:"Munos, Debora",m:"Cliente conflictivo"},{f:"14/4",op:"Jara, Lucia Soledad",m:"Reclamo reiterado de segunda línea"},{f:"14/4",op:"Maidana, Aldana Yamila",m:"Cliente conflictivo"},{f:"14/4",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"14/4",op:"Las Heras, Marina",m:"Reclamo reiterado de segunda línea"},{f:"15/4",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"15/4",op:"Gonzalez, Valeria Silvana",m:"Cliente conflictivo"},{f:"16/4",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"17/4",op:"Blasco, Mariana Lorena",m:"Reclamo reiterado de segunda línea"},{f:"17/4",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"17/4",op:"Munos, Debora",m:"Reclamo reiterado de segunda línea"},{f:"17/4",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"20/4",op:"Blasco, Mariana Lorena",m:"Reclamo reiterado de segunda línea"},{f:"21/4",op:"Huacaña Sanchez, Marcela",m:"Cliente conflictivo"},{f:"21/4",op:"Maidana, Aldana Yamila",m:"Reclamo reiterado de segunda línea"},{f:"21/4",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"21/4",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"22/4",op:"Guglielmi, Romina",m:"Cliente conflictivo"},{f:"22/4",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"23/4",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"23/4",op:"Hernandez, Cristian",m:"Cliente conflictivo"},{f:"24/4",op:"Jorge, Marcos Santiago",m:"Reclamo reiterado de segunda línea"},{f:"24/4",op:"Las Heras, Marina",m:"Falta de Control de llamado"},{f:"27/4",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"27/4",op:"Jimenez Ballesteros, Maria Angelica",m:"Cliente conflictivo"},{f:"27/4",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"27/4",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"27/4",op:"Antunez, Cecilia",m:"Cliente conflictivo"},{f:"27/4",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"27/4",op:"Las Heras, Marina",m:"Cliente conflictivo"},{f:"28/4",op:"Velazquez, Cynthia",m:"Cliente conflictivo"},{f:"28/4",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"28/4",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"29/4",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},
+  {f:"2/5",op:"Coronel, Yanina Mariana",m:"Reclamo reiterado de segunda línea"},{f:"4/5",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"4/5",op:"Hernandez, Cristian",m:"Reclamo reiterado de segunda línea"},{f:"4/5",op:"Hernandez, Cristian",m:"Reclamo reiterado de segunda línea"},{f:"4/5",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"5/5",op:"Jorge, Marcos Santiago",m:"Reclamo reiterado de segunda línea"},{f:"5/5",op:"Jara, Lucia Soledad",m:"Cliente conflictivo"},{f:"5/5",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"6/5",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"6/5",op:"Guiroy, Veronica Pamela",m:"Reclamo reiterado de segunda línea"},{f:"6/5",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"6/5",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"6/5",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"6/5",op:"Guiroy, Veronica Pamela",m:"Cliente conflictivo"},{f:"6/5",op:"Blasco, Mariana Lorena",m:"Reclamo reiterado de segunda línea"},{f:"6/5",op:"Blasco, Mariana Lorena",m:"Cliente conflictivo"},{f:"6/5",op:"Jorge, Marcos Santiago",m:"Cliente conflictivo"},{f:"6/5",op:"Munos, Debora",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Munos, Debora",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Las Heras, Marina",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Antunez, Cecilia",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Falcon, Macancela Melissa",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Blasco, Mariana Lorena",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Jorge, Marcos Santiago",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Las Heras, Marina",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Maidana, Aldana Yamila",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Blasco, Mariana Lorena",m:"Reclamo reiterado de segunda línea"},{f:"7/5",op:"Munos, Debora",m:"Reclamo reiterado de segunda línea"},
+];
+
+function calMes(d){return d.f.split('/')[1];}
+const calByMes={2:[],3:[],4:[],5:[]};
+CAL.forEach(d=>{const m=parseInt(calMes(d));if(calByMes[m])calByMes[m].push(d);});
+function calCountBy(data,key){const r={};data.forEach(d=>{const v=d[key];r[v]=(r[v]||0)+1;});return r;}
+function calSort(obj){return Object.entries(obj).sort((a,b)=>b[1]-a[1]);}
+const PURPLE_RAMP=["#6B2D8B","#7B3A9E","#8B47B1","#9B55C0","#AB63CE","#BC82D8","#CCA0E2","#DCBEEC","#ECDCF5","#F5EEFA"];
+function purpleScale(i,total){const idx=Math.round((i/(Math.max(total-1,1)))*(PURPLE_RAMP.length-1));return PURPLE_RAMP[Math.min(idx,PURPLE_RAMP.length-1)];}
+function calColorByRank(count){return count.map((_,i)=>purpleScale(i,count.length));}
+
+const totalOps=calCountBy(CAL,"op");
+const sortedOps=calSort(totalOps);
+const opLabels=sortedOps.map(x=>x[0]);
+const opVals=sortedOps.map(x=>x[1]);
+const opColors=calColorByRank(opVals);
+const topOp=sortedOps[0];
+const MOTIVOS=["Cliente conflictivo","Reclamo reiterado de segunda línea","Falta de Control de llamado","Falta de respuesta supervisor"];
+const MCOLORS=["#6B2D8B","#AB63CE","#CCA0E2","#ECDCF5"];
+const totalMotivos=calCountBy(CAL,"m");
+
+document.getElementById('cal_metrics').innerHTML=`
+  <div class="metric"><div class="metric-label">Total</div><div class="metric-value">${CAL.length}</div><div class="metric-sub">feb–may</div></div>
+  <div class="metric"><div class="metric-label">Febrero</div><div class="metric-value">${calByMes[2].length}</div><div class="metric-sub">derivaciones</div></div>
+  <div class="metric"><div class="metric-label">Marzo</div><div class="metric-value">${calByMes[3].length}</div><div class="metric-sub">derivaciones</div></div>
+  <div class="metric"><div class="metric-label">Abril</div><div class="metric-value">${calByMes[4].length}</div><div class="metric-sub">derivaciones</div></div>
+  <div class="metric"><div class="metric-label">Mayo</div><div class="metric-value">${calByMes[5].length}</div><div class="metric-sub">derivaciones</div></div>
+  <div class="metric"><div class="metric-label">Mayor derivador</div><div class="metric-value" style="font-size:13px;margin-top:2px;">${topOp[0].split(',')[0]}</div><div class="metric-sub">${topOp[1]} casos</div></div>
+`;
+
+const calCd={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}};
+
+new Chart(document.getElementById('cc_total'),{type:'bar',data:{labels:opLabels,datasets:[{label:'Derivaciones',data:opVals,backgroundColor:opColors,borderRadius:3}]},options:{...calCd,indexAxis:'y',scales:{x:{ticks:{font:{size:11}},grid:{color:'rgba(0,0,0,0.04)'}},y:{ticks:{font:{size:11}}}},plugins:{...calCd.plugins,datalabels:{display:false},tooltip:{callbacks:{label:c=>` ${c.raw} derivaciones`}}},layout:{padding:{right:30}}},plugins:[{id:'barLabels',afterDatasetsDraw(chart){const ctx=chart.ctx;chart.data.datasets.forEach((ds,di)=>{const meta=chart.getDatasetMeta(di);meta.data.forEach((bar,i)=>{const val=ds.data[i];const x=bar.x+5;const y=bar.y;ctx.save();ctx.fillStyle='#444';ctx.font='bold 11px DM Sans, sans-serif';ctx.textBaseline='middle';ctx.fillText(val,x,y);ctx.restore();});});}}]});
+
+new Chart(document.getElementById('cc_evol'),{type:'line',data:{labels:["Febrero","Marzo","Abril","Mayo"],datasets:[{label:'Derivaciones',data:[calByMes[2].length,calByMes[3].length,calByMes[4].length,calByMes[5].length],borderColor:'#6B2D8B',backgroundColor:'rgba(107,45,139,0.08)',borderWidth:2,pointBackgroundColor:'#6B2D8B',pointRadius:6,tension:0.3,fill:true}]},options:{...calCd,scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11}},beginAtZero:true}},plugins:{...calCd.plugins,tooltip:{callbacks:{label:c=>` ${c.raw} derivaciones`}},datalabels:{display:false}}},plugins:[{id:'lineLabels',afterDatasetsDraw(chart){const ctx=chart.ctx;const ds=chart.data.datasets[0];const meta=chart.getDatasetMeta(0);const pts=meta.data;const vals=ds.data;const n=pts.length;[0,n-1].forEach(i=>{const x=pts[i].x;const y=pts[i].y;ctx.save();ctx.fillStyle='#6B2D8B';ctx.font='bold 13px DM Sans, sans-serif';ctx.textAlign='center';ctx.textBaseline= i===0?'bottom':'bottom';ctx.fillText(vals[i],x,y-8);ctx.restore();});}}]});
+
+const motLeg=document.getElementById('cc_motleg');
+MOTIVOS.forEach((m,i)=>{motLeg.innerHTML+=`<div style="display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;border-radius:2px;background:${MCOLORS[i]};flex-shrink:0;"></span><span>${m} <strong>(${totalMotivos[m]||0})</strong></span></div>`;});
+new Chart(document.getElementById('cc_motivos'),{type:'doughnut',data:{labels:MOTIVOS,datasets:[{data:MOTIVOS.map(m=>totalMotivos[m]||0),backgroundColor:MCOLORS,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label}: ${c.raw}`}}}}});
+
+new Chart(document.getElementById('cc_motmes'),{type:'bar',data:{labels:["Febrero","Marzo","Abril","Mayo"],datasets:MOTIVOS.map((m,i)=>({label:m,data:[2,3,4,5].map(mn=>calByMes[mn].filter(d=>d.m===m).length),backgroundColor:MCOLORS[i],borderRadius:3}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:10,padding:12}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11}},beginAtZero:true}}}});
+
+function makeCalMonth(canvasId,lblId,mesNum){
+  const data=calByMes[mesNum];
+  const cnt=calCountBy(data,"op");
+  const sorted=calSort(cnt);
+  const labels=sorted.map(x=>x[0]);
+  const vals=sorted.map(x=>x[1]);
+  document.getElementById(lblId).textContent=`${data.length} derivaciones totales`;
+  new Chart(document.getElementById(canvasId),{type:'bar',data:{labels,datasets:[{label:'Derivaciones',data:vals,backgroundColor:calColorByRank(vals),borderRadius:3}]},options:{...calCd,indexAxis:'y',scales:{x:{ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}},y:{ticks:{font:{size:10}}}},plugins:{...calCd.plugins,tooltip:{callbacks:{label:c=>` ${c.raw} derivaciones`}}},layout:{padding:{right:30}}},plugins:[{id:'barLabels'+mesNum,afterDatasetsDraw(chart){const ctx=chart.ctx;chart.data.datasets.forEach((ds,di)=>{const meta=chart.getDatasetMeta(di);meta.data.forEach((bar,i)=>{const val=ds.data[i];const x=bar.x+5;const y=bar.y;ctx.save();ctx.fillStyle='#444';ctx.font='bold 10px DM Sans, sans-serif';ctx.textBaseline='middle';ctx.fillText(val,x,y);ctx.restore();});});}}]});
+}
+makeCalMonth('cc_feb','lbl_feb',2);
+makeCalMonth('cc_mar','lbl_mar',3);
+makeCalMonth('cc_abr','lbl_abr',4);
+makeCalMonth('cc_may','lbl_may',5);
+</script>
+</body>
+</html>
