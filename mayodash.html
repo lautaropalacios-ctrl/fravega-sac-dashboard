@@ -1,0 +1,2886 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Frávega SAC · Dashboard Supervisor</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
+<style>
+:root{
+  --purple:#6B21A8;--purple-d:#4C1D95;--purple-m:#7C3AED;--purple-l:#EDE9FE;
+  --red:#DC2626;--green:#16A34A;--amber:#D97706;
+  --black:#0A0A0A;--g900:#111827;--g800:#1F2937;--g700:#374151;
+  --g500:#6B7280;--g300:#D1D5DB;--g100:#F3F4F6;--g50:#F9FAFB;--white:#fff;
+  --font:'Barlow',sans-serif;--fonc:'Barlow Condensed',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--g100);color:var(--black);min-height:100vh}
+
+.topbar{background:var(--purple-d);color:#fff;height:52px;display:flex;align-items:center;padding:0 24px;gap:14px;border-bottom:3px solid var(--purple-m)}
+.logo{font-family:var(--fonc);font-size:22px;font-weight:800;letter-spacing:.06em}
+.logo-sep{width:1px;height:24px;background:rgba(255,255,255,.2)}
+.tb-sub{font-size:11px;font-weight:600;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em}
+.tb-right{margin-left:auto;font-size:11px;color:rgba(255,255,255,.5)}
+
+.months-bar{background:var(--g900);display:flex;padding:0 24px;border-bottom:1px solid rgba(255,255,255,.07)}
+.month-tab{font-family:var(--fonc);font-size:14px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:11px 20px;cursor:pointer;color:rgba(255,255,255,.35);border-bottom:3px solid transparent;transition:all .15s}
+.month-tab.active{color:#fff;border-bottom-color:var(--purple-m)}
+.month-tab.na{cursor:default;opacity:.2;pointer-events:none}
+
+.weeks-bar{background:var(--white);border-bottom:1.5px solid var(--g300);display:flex;padding:0 24px;overflow-x:auto}
+.week-tab{font-size:12px;font-weight:600;padding:10px 18px;cursor:pointer;color:var(--g500);border-bottom:2px solid transparent;letter-spacing:.03em;white-space:nowrap;transition:all .15s}
+.week-tab.active{color:var(--purple);border-bottom-color:var(--purple);font-weight:700}
+.week-tab.na{cursor:default;color:var(--g300);pointer-events:none}
+
+.pane{display:none;padding:20px 24px}
+.pane.active{display:block;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--white);border:1px solid var(--g300);border-radius:8px;padding:12px 14px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--purple)}
+.kpi.ac{background:var(--purple-d);border-color:var(--purple-d)}.kpi.ac::before{background:rgba(255,255,255,.35)}
+.kpi.g::before{background:var(--green)}.kpi.r::before{background:var(--red)}.kpi.a::before{background:var(--amber)}
+.kl{font-size:10px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
+.kpi.ac .kl{color:rgba(255,255,255,.6)}
+.kv{font-family:var(--fonc);font-size:24px;font-weight:700;color:var(--black);line-height:1}
+.kpi.ac .kv{color:#fff}
+.ks{font-size:10px;color:var(--g500);margin-top:3px}
+.kpi.ac .ks{color:rgba(255,255,255,.5)}
+
+.card{background:var(--white);border:1px solid var(--g300);border-radius:8px;padding:15px 17px;margin-bottom:14px}
+.ct{font-size:10px;font-weight:700;color:var(--g700);text-transform:uppercase;letter-spacing:.08em;margin-bottom:11px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+
+.day-sel{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.day-sel label{font-size:11px;font-weight:600;color:var(--g500);text-transform:uppercase;letter-spacing:.05em;margin-right:4px}
+.db{font-size:11px;font-weight:600;padding:5px 13px;border-radius:20px;border:1.5px solid var(--g300);background:var(--white);color:var(--g700);cursor:pointer;transition:all .15s}
+.db.active{background:var(--purple);border-color:var(--purple);color:#fff}
+.db:hover:not(.active){border-color:var(--purple);color:var(--purple)}
+
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead tr{border-bottom:2px solid var(--black)}
+th{padding:7px 8px;font-size:10px;font-weight:700;color:var(--g700);text-transform:uppercase;letter-spacing:.05em;text-align:left;white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid var(--g100);color:var(--black)}
+tbody tr:hover{background:var(--g50)}
+.tr{text-align:right}
+.bdg{font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;text-transform:uppercase}
+.bg{background:#DCFCE7;color:#166534}.ba{background:#FEF9C3;color:#854D0E}.br{background:#FEE2E2;color:#991B1B}
+
+.ph-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.ph-hdr h2{font-family:var(--fonc);font-size:22px;font-weight:700}
+.ph-hdr h2 span{color:var(--purple)}
+.ph-sub{font-size:12px;color:var(--g500);margin-top:1px}
+.obj-pill{font-size:11px;background:var(--g50);border:1px solid var(--g300);border-radius:6px;padding:5px 12px;color:var(--g700)}
+.obj-pill strong{color:var(--purple)}
+
+/* ── Month filter buttons ── */
+.cal-filter{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.cmf{background:#F3F4F6;border:1px solid #E5E7EB;color:#6B7280;font:600 11px 'Barlow',sans-serif;
+  padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .2s;}
+.cmf:hover{background:#EDE9FE;border-color:#A78BFA;color:#6D28D9;}
+.cmf.active{background:#5B21B6;border-color:#5B21B6;color:#fff;}
+.cal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:8px;}
+
+/* ── Insights panel ── */
+.insights-panel{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 8px;}
+.ins-card{background:linear-gradient(135deg,#F5F3FF 0%,#EDE9FE 100%);
+  border:1px solid #DDD6FE;border-radius:10px;padding:12px 14px;
+  display:flex;gap:10px;align-items:flex-start;}
+.ins-icon{font-size:22px;line-height:1;margin-top:1px;}
+.ins-body{flex:1;}
+.ins-title{font:700 11px 'Barlow Condensed',sans-serif;color:#5B21B6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+.ins-text{font:400 12px 'Barlow',sans-serif;color:#374151;line-height:1.4;}
+.ins-val{font:700 14px 'Barlow',sans-serif;color:#4C1D95;}
+
+/* ── Trend arrows on KPIs ── */
+.kpi-trend{font-size:11px;font-weight:700;margin-top:2px;}
+.t-up{color:#059669;} .t-dn{color:#DC2626;} .t-neu{color:#9CA3AF;}
+
+/* ── QA podium badges ── */
+.qa-badge{display:inline-block;font-size:14px;margin-right:4px;}
+
+/* ── Animated counter ── */
+.kv[data-target]{transition:opacity .3s;}
+
+/* ── Chart empty state ── */
+.empty-month{display:none;text-align:center;padding:32px 0;color:#9CA3AF;font:400 13px Barlow,sans-serif;}
+
+
+/* ── Calidad operator dropdown filter ── */
+.cal-drop-wrap{position:relative;z-index:50;}
+.cal-drop-btn{display:flex;align-items:center;gap:8px;
+  background:#fff;border:1.5px solid #DDD6FE;border-radius:8px;
+  padding:7px 14px;cursor:pointer;font:600 12px 'Barlow',sans-serif;
+  color:#5B21B6;transition:all .2s;white-space:nowrap;user-select:none;
+  box-shadow:0 1px 4px rgba(91,33,182,.08);}
+.cal-drop-btn:hover{background:#F5F3FF;border-color:#A78BFA;box-shadow:0 2px 8px rgba(91,33,182,.15);}
+.cal-drop-btn svg{color:#7C3AED;transition:transform .2s;flex-shrink:0;}
+.cal-drop-btn.open svg{transform:rotate(180deg);}
+.cal-drop-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;
+  background:#fff;border:1.5px solid #DDD6FE;border-radius:10px;
+  box-shadow:0 8px 24px rgba(91,33,182,.15);min-width:180px;overflow:hidden;z-index:200;}
+.cal-drop-menu.open{display:block;animation:dropFade .15s ease;}
+@keyframes dropFade{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.cal-drop-item{padding:9px 16px;font:500 12px 'Barlow',sans-serif;color:#374151;
+  cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:6px;}
+.cal-drop-item:hover{background:#F5F3FF;color:#5B21B6;}
+.cal-drop-item.active{background:#EDE9FE;color:#5B21B6;font-weight:700;}
+.cal-drop-item.active::after{content:'✓';margin-left:auto;color:#7C3AED;}
+
+
+/* ── Operadores Críticos ── */
+.crit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-bottom:20px;}
+.crit-card{background:#fff;border-radius:12px;border:1.5px solid #E5E7EB;overflow:hidden;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);transition:box-shadow .2s;}
+.crit-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.10);}
+.crit-card-hdr{padding:14px 16px 10px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.crit-name{font:700 16px 'Barlow Condensed',sans-serif;color:#1F2937;letter-spacing:.02em;}
+.crit-role{font:400 11px Barlow,sans-serif;color:#6B7280;margin-top:2px;}
+.sev-badge{padding:4px 10px;border-radius:20px;font:700 11px Barlow,sans-serif;white-space:nowrap;flex-shrink:0;}
+.sev-rojo{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA;}
+.sev-naranja{background:#FEF3C7;color:#92400E;border:1px solid #FDE68A;}
+.sev-amarillo{background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0;}
+.crit-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#F3F4F6;border-top:1px solid #F3F4F6;border-bottom:1px solid #F3F4F6;}
+.crit-met{background:#fff;padding:10px 12px;text-align:center;}
+.crit-met-val{font:700 20px 'Barlow Condensed',sans-serif;color:#1F2937;}
+.crit-met-val.bad{color:#DC2626;} .crit-met-val.warn{color:#D97706;} .crit-met-val.ok{color:#059669;}
+.crit-met-lbl{font:400 10px Barlow,sans-serif;color:#9CA3AF;margin-top:2px;text-transform:uppercase;letter-spacing:.5px;}
+.crit-issues{padding:12px 16px;}
+.crit-issue-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:7px;font:400 12px Barlow,sans-serif;color:#374151;line-height:1.4;}
+.crit-issue-row:last-child{margin-bottom:0;}
+.crit-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.dot-r{background:#DC2626;} .dot-o{background:#D97706;} .dot-b{background:#6B7280;}
+.crit-footer{padding:10px 16px;background:#F9FAFB;border-top:1px solid #F3F4F6;
+  font:400 11px Barlow,sans-serif;color:#9CA3AF;display:flex;justify-content:space-between;align-items:center;}
+.crit-trend-up{color:#059669;font-weight:700;} .crit-trend-dn{color:#DC2626;font-weight:700;}
+.crit-trend-neu{color:#9CA3AF;font-weight:700;}
+.crit-update-banner{background:linear-gradient(135deg,#1F2937,#374151);border-radius:10px;
+  padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.crit-update-banner .bu-left{font:400 13px Barlow,sans-serif;color:#D1D5DB;}
+.crit-update-banner .bu-left strong{color:#fff;font-weight:700;}
+.crit-update-banner .bu-date{font:600 12px Barlow,sans-serif;color:#9CA3AF;}
+.crit-section-title{font:700 13px 'Barlow Condensed',sans-serif;color:#6B7280;
+  text-transform:uppercase;letter-spacing:.8px;margin:0 0 10px;padding-bottom:6px;
+  border-bottom:1px solid #E5E7EB;}
+
+
+/* ── Criticos section blocks ── */
+.crit-section-block{padding:0;}
+.crit-section-label{font:700 10px 'Barlow Condensed',sans-serif;letter-spacing:.8px;
+  text-transform:uppercase;padding:8px 16px 2px;}
+.crit-label-qa{color:#5B21B6;background:#F5F3FF;}
+.crit-label-op{color:#B45309;background:#FFFBEB;}
+
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">FRÁVEGA SAC</div>
+  <div class="logo-sep"></div>
+  <div class="tb-sub">Dashboard de Supervisión · Campaña Frávega SAC</div>
+  <div class="tb-right" id="topDate"></div>
+</div>
+
+<div class="months-bar">
+  <div class="month-tab active">Mayo 2026</div>
+  <div class="month-tab na">Junio</div>
+  <div class="month-tab na">Julio</div>
+  <div class="month-tab na">Agosto</div>
+</div>
+
+<div class="weeks-bar">
+  <div class="week-tab active" onclick="swWeek('resumen',this)">Resumen Mayo</div>
+  <div class="week-tab" onclick="swWeek('s1',this)">Semana 1 · 4–9 May</div>
+  <div class="week-tab" onclick="swWeek('s2',this)">Semana 2 · 11–16 May</div>
+  <div class="week-tab" onclick="swWeek('s3',this)">Semana 3 · 18–23 May</div>
+  <div class="week-tab" onclick="swWeek('s4',this)">Semana 4 · 26–30 May</div>
+  <div class="week-tab" onclick="swWeek('calidad',this)">Calidad · Derivaciones</div>
+  <div class="week-tab" onclick="swWeek('qa',this)">Auditorías QA</div>
+  <div class="week-tab" onclick="swWeek('criticos',this)" style="color:#DC2626;font-weight:700">⚠️ Operadores Críticos</div>
+</div>
+
+<!-- RESUMEN MAYO -->
+<div id="pane-resumen" class="pane active">
+  <div class="ph-hdr">
+    <div><h2>Resumen <span>Mayo 2026</span></h2><div class="ph-sub">Acumulado semanas disponibles · Semanas 1, 2, 3 y 4 cargadas</div></div>
+    <div class="obj-pill">Obj. llamadas: <strong>≥ 60</strong> &nbsp;|&nbsp; Obj. AHT: <strong>≤ 4'30"</strong></div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi ac"><div class="kl">Total llamadas</div><div class="kv">10.964</div><div class="ks">Semanas 1 y 2</div></div>
+    <div class="kpi"><div class="kl">Agentes</div><div class="kv">20</div><div class="ks">semana 2 (+Arellano, +Velazquez)</div></div>
+    <div class="kpi a"><div class="kl">AHT promedio</div><div class="kv">4'33"</div><div class="ks">obj. ≤ 4'30"</div></div>
+    <div class="kpi g"><div class="kl">Mejor día</div><div class="kv">Lun 11/05</div><div class="ks">1.283 llamadas</div></div>
+    <div class="kpi r"><div class="kl">Fichas time out</div><div class="kv">406+426</div><div class="ks">Sem.1 + Sem.2</div></div>
+    <div class="kpi"><div class="kl">Login prom.</div><div class="kv">6.3h</div><div class="ks">por agente/día</div></div>
+  </div>
+  <div class="card">
+    <div class="ct">Llamadas por día — Semana 1</div>
+    <div style="height:210px"><canvas id="cRD"></canvas></div>
+  </div>
+  <div class="row2">
+    <div class="card">
+      <div class="ct">AHT promedio por día</div>
+      <div style="height:185px"><canvas id="cRA"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct">Fichas time out por operador — Mayo acumulado (Sem. 1 + Sem. 2)</div>
+      <div style="height:580px"><canvas id="cRF"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">Ranking acumulado semana 1 — todos los agentes</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>#</th><th>Agente</th><th class="tr">Llamadas</th><th class="tr">AHT prom.</th><th class="tr">Login total</th><th class="tr">Conversación</th><th class="tr">Fichas T.O.</th><th class="tr">Días</th><th>Obj. ll.</th></tr></thead>
+      <tbody id="tbRes"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- SEMANA 1 -->
+<div id="pane-s1" class="pane">
+  <div class="ph-hdr">
+    <div><h2>Semana 1 · <span>4 al 9 de Mayo</span></h2><div class="ph-sub">19 agentes · Lunes a Sábado · Campaña Frávega SAC</div></div>
+    <div class="obj-pill">Obj. llamadas: <strong>≥ 60</strong> &nbsp;|&nbsp; Obj. AHT: <strong>≤ 4'30"</strong></div>
+  </div>
+  <div class="day-sel">
+    <label>Ver:</label>
+    <button class="db active" onclick="swDay('all',this)">Semana completa</button>
+    <button class="db" onclick="swDay('2026-05-04',this)">Lun 04/05</button>
+    <button class="db" onclick="swDay('2026-05-05',this)">Mar 05/05</button>
+    <button class="db" onclick="swDay('2026-05-06',this)">Mié 06/05</button>
+    <button class="db" onclick="swDay('2026-05-07',this)">Jue 07/05</button>
+    <button class="db" onclick="swDay('2026-05-08',this)">Vie 08/05</button>
+    <button class="db" onclick="swDay('2026-05-09',this)">Sáb 09/05</button>
+  </div>
+  <div class="kpi-grid" id="kpiS1"></div>
+  <div class="card">
+    <div class="ct" id="ctLl">Llamadas por agente — Semana completa</div>
+    <div style="height:580px"><canvas id="cS1L"></canvas></div>
+  </div>
+  <div class="row2">
+    <div class="card">
+      <div class="ct">AHT por agente</div>
+      <div style="height:580px"><canvas id="cS1A"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct" id="ctDist">Distribución del tiempo — equipo (semana)</div>
+      <div style="height:580px"><canvas id="cS1T"></canvas></div>
+    </div>
+  </div>
+  <div class="card" id="cS1Fcard">
+    <div class="ct">Fichas time out por operador — Semana 1 (acumulado semanal)</div>
+    <div style="height:580px"><canvas id="cS1F"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="ct" id="ctTbl">Tabla detalle — Semana completa</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Agente</th><th class="tr">Llamadas</th><th class="tr">AHT</th><th class="tr">Login</th><th class="tr">Conversación</th><th class="tr">Hold</th><th class="tr">Fichas T.O.</th><th class="tr">Días</th><th>Llamadas</th><th>AHT</th></tr></thead>
+      <tbody id="tbS1"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<script>
+var DIAS=[
+  {dia:'Lun 04/05',f:'2026-05-04',ag:18,ll:870, aht:287,lm:381.5},
+  {dia:'Mar 05/05',f:'2026-05-05',ag:18,ll:955, aht:258,lm:388.7},
+  {dia:'Mié 06/05',f:'2026-05-06',ag:18,ll:939, aht:270,lm:405.4},
+  {dia:'Jue 07/05',f:'2026-05-07',ag:19,ll:920, aht:267,lm:386.6},
+  {dia:'Vie 08/05',f:'2026-05-08',ag:17,ll:833, aht:279,lm:391.1},
+  {dia:'Sáb 09/05',f:'2026-05-09',ag:8, ll:253, aht:290,lm:231.8},
+];
+var AG=[
+  {ag:'Guiroy, Veronica Pamela',         ll:489,aht:250,login:2718,conv:2042,aux:48, sup:55, bo:74, des:117,hold:25, fichas:6,  dias:6},
+  {ag:'Menendez, Cinthya',               ll:335,aht:188,login:3134,conv:1091,aux:56, sup:29, bo:37, des:113,hold:181,fichas:32, dias:6},
+  {ag:'Guglielmi, Romina',               ll:329,aht:319,login:2264,conv:1719,aux:91, sup:11, bo:75, des:124,hold:72, fichas:25, dias:6},
+  {ag:'Maidana, Aldana Yamila',          ll:305,aht:227,login:1794,conv:1153,aux:24, sup:6,  bo:124,des:150,hold:12, fichas:6,  dias:5},
+  {ag:'Huacaña Sanchez, Marcela',        ll:304,aht:256,login:2155,conv:1291,aux:106,sup:106,bo:156,des:156,hold:42, fichas:0,  dias:5},
+  {ag:'Hernandez, Cristian',             ll:284,aht:266,login:1805,conv:1248,aux:28, sup:0,  bo:179,des:155,hold:61, fichas:31, dias:5},
+  {ag:'Munos, Debora',                   ll:279,aht:247,login:2155,conv:1141,aux:72, sup:16, bo:201,des:155,hold:47, fichas:3,  dias:5},
+  {ag:'Las Heras, Marina',               ll:261,aht:346,login:2062,conv:1477,aux:22, sup:12, bo:139,des:157,hold:232,fichas:3,  dias:6},
+  {ag:'Jara, Lucia Soledad',             ll:247,aht:274,login:1802,conv:1124,aux:78, sup:0,  bo:151,des:151,hold:176,fichas:10, dias:5},
+  {ag:'Alfonso, Angel Agustin',          ll:241,aht:238,login:1989,conv:938, aux:126,sup:324,bo:156,des:169,hold:46, fichas:129,dias:6},
+  {ag:'Antunez, Cecilia',                ll:240,aht:294,login:1815,conv:1171,aux:69, sup:0,  bo:159,des:146,hold:140,fichas:7,  dias:5},
+  {ag:'Jorge, Marcos Santiago',          ll:232,aht:303,login:2036,conv:1157,aux:118,sup:271,bo:123,des:160,hold:275,fichas:2,  dias:6},
+  {ag:'Valeria Silvana, Gonzalez',       ll:230,aht:258,login:1799,conv:987, aux:76, sup:157,bo:191,des:151,hold:160,fichas:64, dias:5},
+  {ag:'Falcon, Macancela Melissa Esther',ll:213,aht:313,login:1809,conv:1108,aux:75, sup:82, bo:145,des:151,hold:57, fichas:5,  dias:5},
+  {ag:'Jimenez Ballesteros, Maria Angelica',ll:184,aht:248,login:1655,conv:763,aux:103,sup:71,bo:114,des:135,hold:144,fichas:4,dias:5},
+  {ag:'Blasco, Mariana Lorena',          ll:171,aht:291,login:1260,conv:807, aux:42, sup:34, bo:88, des:72, hold:123,fichas:18, dias:4},
+  {ag:'Iturria, María',                  ll:164,aht:347,login:1753,conv:932, aux:103,sup:32, bo:148,des:159,hold:335,fichas:42, dias:5},
+  {ag:'Molina, Viviana',                 ll:133,aht:327,login:1112,conv:719, aux:64, sup:31, bo:59, des:89, hold:74, fichas:8,  dias:4},
+  {ag:'Coronel, Yanina Mariana',         ll:129,aht:203,login:1891,conv:441, aux:45, sup:43, bo:62, des:124,hold:45, fichas:11, dias:4},
+];
+var DAILY=[
+  {ag:'Huacaña Sanchez, Marcela',f:'2026-05-04',ll:47,aht:248,login:361},
+  {ag:'Huacaña Sanchez, Marcela',f:'2026-05-05',ll:49,aht:270,login:354},
+  {ag:'Huacaña Sanchez, Marcela',f:'2026-05-06',ll:73,aht:233,login:480},
+  {ag:'Huacaña Sanchez, Marcela',f:'2026-05-07',ll:73,aht:243,login:478},
+  {ag:'Huacaña Sanchez, Marcela',f:'2026-05-08',ll:62,aht:285,login:483},
+  {ag:'Iturria, María',f:'2026-05-04',ll:32,aht:391,login:357},
+  {ag:'Iturria, María',f:'2026-05-05',ll:37,aht:316,login:352},
+  {ag:'Iturria, María',f:'2026-05-06',ll:38,aht:336,login:358},
+  {ag:'Iturria, María',f:'2026-05-07',ll:20,aht:394,login:343},
+  {ag:'Iturria, María',f:'2026-05-08',ll:37,aht:296,login:343},
+  {ag:'Falcon, Macancela Melissa Esther',f:'2026-05-04',ll:38,aht:365,login:358},
+  {ag:'Falcon, Macancela Melissa Esther',f:'2026-05-05',ll:47,aht:287,login:361},
+  {ag:'Falcon, Macancela Melissa Esther',f:'2026-05-06',ll:43,aht:320,login:361},
+  {ag:'Falcon, Macancela Melissa Esther',f:'2026-05-07',ll:43,aht:307,login:366},
+  {ag:'Falcon, Macancela Melissa Esther',f:'2026-05-08',ll:42,aht:287,login:363},
+  {ag:'Coronel, Yanina Mariana',f:'2026-05-04',ll:35,aht:219,login:537},
+  {ag:'Coronel, Yanina Mariana',f:'2026-05-05',ll:33,aht:175,login:526},
+  {ag:'Coronel, Yanina Mariana',f:'2026-05-07',ll:39,aht:219,login:359},
+  {ag:'Coronel, Yanina Mariana',f:'2026-05-08',ll:22,aht:199,login:469},
+  {ag:'Valeria Silvana, Gonzalez',f:'2026-05-04',ll:44,aht:289,login:362},
+  {ag:'Valeria Silvana, Gonzalez',f:'2026-05-05',ll:45,aht:224,login:359},
+  {ag:'Valeria Silvana, Gonzalez',f:'2026-05-06',ll:50,aht:249,login:361},
+  {ag:'Valeria Silvana, Gonzalez',f:'2026-05-07',ll:43,aht:290,login:358},
+  {ag:'Valeria Silvana, Gonzalez',f:'2026-05-08',ll:48,aht:238,login:358},
+  {ag:'Guiroy, Veronica Pamela',f:'2026-05-04',ll:94,aht:271,login:543},
+  {ag:'Guiroy, Veronica Pamela',f:'2026-05-05',ll:91,aht:256,login:544},
+  {ag:'Guiroy, Veronica Pamela',f:'2026-05-06',ll:86,aht:232,login:424},
+  {ag:'Guiroy, Veronica Pamela',f:'2026-05-07',ll:81,aht:250,login:486},
+  {ag:'Guiroy, Veronica Pamela',f:'2026-05-08',ll:88,aht:244,login:480},
+  {ag:'Guiroy, Veronica Pamela',f:'2026-05-09',ll:49,aht:244,login:240},
+  {ag:'Guglielmi, Romina',f:'2026-05-04',ll:49,aht:318,login:336},
+  {ag:'Guglielmi, Romina',f:'2026-05-05',ll:57,aht:266,login:330},
+  {ag:'Guglielmi, Romina',f:'2026-05-06',ll:65,aht:317,login:451},
+  {ag:'Guglielmi, Romina',f:'2026-05-07',ll:74,aht:288,login:455},
+  {ag:'Guglielmi, Romina',f:'2026-05-08',ll:53,aht:355,login:453},
+  {ag:'Guglielmi, Romina',f:'2026-05-09',ll:31,aht:369,login:239},
+  {ag:'Maidana, Aldana Yamila',f:'2026-05-04',ll:55,aht:246,login:359},
+  {ag:'Maidana, Aldana Yamila',f:'2026-05-05',ll:64,aht:224,login:360},
+  {ag:'Maidana, Aldana Yamila',f:'2026-05-06',ll:58,aht:233,login:359},
+  {ag:'Maidana, Aldana Yamila',f:'2026-05-07',ll:68,aht:197,login:357},
+  {ag:'Maidana, Aldana Yamila',f:'2026-05-08',ll:60,aht:237,login:359},
+  {ag:'Menendez, Cinthya',f:'2026-05-04',ll:89,aht:211,login:497},
+  {ag:'Menendez, Cinthya',f:'2026-05-05',ll:93,aht:201,login:489},
+  {ag:'Menendez, Cinthya',f:'2026-05-06',ll:20,aht:184,login:781},
+  {ag:'Menendez, Cinthya',f:'2026-05-07',ll:23,aht:175,login:772},
+  {ag:'Menendez, Cinthya',f:'2026-05-08',ll:70,aht:199,login:409},
+  {ag:'Menendez, Cinthya',f:'2026-05-09',ll:40,aht:155,login:187},
+  {ag:'Munos, Debora',f:'2026-05-04',ll:38,aht:261,login:359},
+  {ag:'Munos, Debora',f:'2026-05-05',ll:39,aht:249,login:358},
+  {ag:'Munos, Debora',f:'2026-05-06',ll:70,aht:251,login:480},
+  {ag:'Munos, Debora',f:'2026-05-07',ll:67,aht:230,login:480},
+  {ag:'Munos, Debora',f:'2026-05-08',ll:65,aht:242,login:478},
+  {ag:'Molina, Viviana',f:'2026-05-04',ll:43,aht:342,login:361},
+  {ag:'Molina, Viviana',f:'2026-05-05',ll:52,aht:291,login:358},
+  {ag:'Molina, Viviana',f:'2026-05-06',ll:34,aht:352,login:361},
+  {ag:'Molina, Viviana',f:'2026-05-07',ll:4, aht:322,login:32},
+  {ag:'Blasco, Mariana Lorena',f:'2026-05-06',ll:50,aht:255,login:358},
+  {ag:'Blasco, Mariana Lorena',f:'2026-05-07',ll:47,aht:242,login:331},
+  {ag:'Blasco, Mariana Lorena',f:'2026-05-08',ll:45,aht:306,login:332},
+  {ag:'Blasco, Mariana Lorena',f:'2026-05-09',ll:29,aht:362,login:240},
+  {ag:'Jimenez Ballesteros, Maria Angelica',f:'2026-05-04',ll:42,aht:233,login:360},
+  {ag:'Jimenez Ballesteros, Maria Angelica',f:'2026-05-05',ll:36,aht:251,login:350},
+  {ag:'Jimenez Ballesteros, Maria Angelica',f:'2026-05-06',ll:49,aht:243,login:352},
+  {ag:'Jimenez Ballesteros, Maria Angelica',f:'2026-05-07',ll:35,aht:281,login:358},
+  {ag:'Jimenez Ballesteros, Maria Angelica',f:'2026-05-09',ll:22,aht:231,login:235},
+  {ag:'Las Heras, Marina',f:'2026-05-04',ll:36,aht:406,login:371},
+  {ag:'Las Heras, Marina',f:'2026-05-05',ll:52,aht:300,login:365},
+  {ag:'Las Heras, Marina',f:'2026-05-06',ll:46,aht:346,login:361},
+  {ag:'Las Heras, Marina',f:'2026-05-07',ll:52,aht:302,login:362},
+  {ag:'Las Heras, Marina',f:'2026-05-08',ll:46,aht:340,login:362},
+  {ag:'Las Heras, Marina',f:'2026-05-09',ll:29,aht:380,login:240},
+  {ag:'Hernandez, Cristian',f:'2026-05-04',ll:62,aht:244,login:360},
+  {ag:'Hernandez, Cristian',f:'2026-05-05',ll:58,aht:249,login:360},
+  {ag:'Hernandez, Cristian',f:'2026-05-06',ll:58,aht:261,login:360},
+  {ag:'Hernandez, Cristian',f:'2026-05-07',ll:61,aht:258,login:367},
+  {ag:'Hernandez, Cristian',f:'2026-05-08',ll:45,aht:319,login:358},
+  {ag:'Jorge, Marcos Santiago',f:'2026-05-04',ll:36,aht:339,login:360},
+  {ag:'Jorge, Marcos Santiago',f:'2026-05-05',ll:42,aht:283,login:359},
+  {ag:'Jorge, Marcos Santiago',f:'2026-05-06',ll:43,aht:291,login:359},
+  {ag:'Jorge, Marcos Santiago',f:'2026-05-07',ll:49,aht:258,login:359},
+  {ag:'Jorge, Marcos Santiago',f:'2026-05-08',ll:32,aht:334,login:360},
+  {ag:'Jorge, Marcos Santiago',f:'2026-05-09',ll:30,aht:311,login:240},
+  {ag:'Alfonso, Angel Agustin',f:'2026-05-04',ll:41,aht:252,login:355},
+  {ag:'Alfonso, Angel Agustin',f:'2026-05-05',ll:45,aht:232,login:361},
+  {ag:'Alfonso, Angel Agustin',f:'2026-05-06',ll:54,aht:213,login:360},
+  {ag:'Alfonso, Angel Agustin',f:'2026-05-07',ll:48,aht:204,login:361},
+  {ag:'Alfonso, Angel Agustin',f:'2026-05-08',ll:30,aht:259,login:318},
+  {ag:'Alfonso, Angel Agustin',f:'2026-05-09',ll:23,aht:271,login:234},
+  {ag:'Jara, Lucia Soledad',f:'2026-05-04',ll:37,aht:274,login:272},
+  {ag:'Jara, Lucia Soledad',f:'2026-05-05',ll:65,aht:275,login:451},
+  {ag:'Jara, Lucia Soledad',f:'2026-05-06',ll:56,aht:246,login:360},
+  {ag:'Jara, Lucia Soledad',f:'2026-05-07',ll:45,aht:309,login:359},
+  {ag:'Jara, Lucia Soledad',f:'2026-05-08',ll:44,aht:264,login:359},
+  {ag:'Antunez, Cecilia',f:'2026-05-04',ll:52,aht:249,login:360},
+  {ag:'Antunez, Cecilia',f:'2026-05-05',ll:50,aht:286,login:359},
+  {ag:'Antunez, Cecilia',f:'2026-05-06',ll:46,aht:300,login:370},
+  {ag:'Antunez, Cecilia',f:'2026-05-07',ll:48,aht:296,login:362},
+  {ag:'Antunez, Cecilia',f:'2026-05-08',ll:44,aht:337,login:364},
+];
+
+var OBJ_LL=60,OBJ_AHT=270;
+var P='#6B21A8',PL='#818CF8',R='#DC2626',G='#16A34A',AM='#D97706';
+var chts={};
+function mk(id,type,labels,datasets,opts){
+  if(chts[id])chts[id].destroy();
+  chts[id]=new Chart(document.getElementById(id),{type:type,data:{labels:labels,datasets:datasets},options:Object.assign({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}},opts||{})});
+}
+function fa(s){return Math.floor(s/60)+"'"+String(Math.round(s%60)).padStart(2,'0')+'"';}
+function fh(m){return Math.floor(m/60)+'h '+String(Math.round(m%60)).padStart(2,'0')+'m';}
+
+var curDay='all';
+
+function getData(){
+  if(curDay==='all') return AG;
+  var fd=DAILY.filter(function(r){return r.f===curDay;});
+  // Always show ALL agents; if no data for that day show 0
+  return AG.map(function(base){
+    var day=fd.find(function(r){return r.ag===base.ag;});
+    if(day){
+      return Object.assign({},base,{ll:day.ll,aht:day.aht,login:day.login,dias:1,conv:0,hold:0,fichas:0,noData:false});
+    } else {
+      return Object.assign({},base,{ll:0,aht:0,login:0,dias:0,conv:0,hold:0,fichas:0,noData:true});
+    }
+  }).sort(function(a,b){return b.ll-a.ll;});
+}
+
+function renderKpi(data){
+  var totLL=data.reduce(function(s,r){return s+r.ll;},0);
+  var avgAHT=data.reduce(function(s,r){return s+r.aht;},0)/data.length;
+  var avgLogin=data.reduce(function(s,r){return s+r.login;},0)/data.length;
+  var cll=data.filter(function(r){return r.ll>=OBJ_LL;}).length;
+  var caht=data.filter(function(r){return r.aht<=OBJ_AHT;}).length;
+  var fichas=curDay==='all'?AG.reduce(function(s,r){return s+r.fichas;},0):0;
+  var dinfo=curDay==='all'?null:DIAS.find(function(d){return d.f===curDay;});
+  var nag=dinfo?dinfo.ag:19;
+  document.getElementById('kpiS1').innerHTML=
+    '<div class="kpi ac"><div class="kl">Llamadas</div><div class="kv">'+totLL.toLocaleString('es-AR')+'</div><div class="ks">'+(curDay==='all'?'semana':curDay.slice(8)+'/05')+'</div></div>'+
+    '<div class="kpi"><div class="kl">Agentes</div><div class="kv">'+nag+'</div><div class="ks">activos</div></div>'+
+    '<div class="kpi '+(avgAHT<=OBJ_AHT?'g':'r')+'"><div class="kl">AHT prom.</div><div class="kv">'+fa(avgAHT)+'</div><div class="ks">obj. ≤ 4\'30"</div></div>'+
+    '<div class="kpi g"><div class="kl">Cumplen obj. ll.</div><div class="kv">'+cll+'<small style="font-size:13px">/'+data.length+'</small></div><div class="ks">≥ 60 llamadas</div></div>'+
+    '<div class="kpi a"><div class="kl">Cumplen AHT</div><div class="kv">'+caht+'<small style="font-size:13px">/'+data.length+'</small></div><div class="ks">≤ 4\'30"</div></div>'+
+    (curDay==='all'?'<div class="kpi r"><div class="kl">Fichas time out</div><div class="kv">'+fichas+'</div><div class="ks">acum. semana</div></div>':
+    '<div class="kpi"><div class="kl">Login prom.</div><div class="kv">'+fh(avgLogin)+'</div><div class="ks">por agente</div></div>');
+}
+
+function renderCharts(data){
+  // Always sort by llamadas descending, all 19 agents included
+  var s=[...data].sort(function(a,b){return b.ll-a.ll;});
+  var nm=s.map(function(r){return r.ag.split(',')[0];});
+
+  // ── LLAMADAS ──
+  mk('cS1L','bar',nm,[{label:'Llamadas',data:s.map(function(r){return r.ll;}),
+    backgroundColor:s.map(function(r){return r.noData?'#E5E7EB':r.ll>=OBJ_LL?P:PL;}),borderRadius:3,barThickness:18}],
+    {indexAxis:'y',scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}},min:0},
+      y:{grid:{display:false},ticks:{font:{size:10}}}},
+    plugins:{legend:{display:false},
+      annotation:{annotations:curDay==='all'?{}:{llLine:{type:'line',xMin:OBJ_LL,xMax:OBJ_LL,
+        borderColor:'#1F2937',borderWidth:2,borderDash:[6,4],
+        label:{content:'Obj 60',display:true,position:'start',
+          backgroundColor:'rgba(31,41,55,0.85)',color:'#fff',font:{size:10,weight:'bold'},padding:4}}}}}});
+
+  // ── AHT ──
+  if(chts['cS1A'])chts['cS1A'].destroy();
+  chts['cS1A']=new Chart(document.getElementById('cS1A'),{type:'bar',
+    data:{labels:nm,datasets:[{label:'AHT',data:s.map(function(r){return r.noData?0:r.aht;}),
+      backgroundColor:s.map(function(r){return r.noData?'#E5E7EB':r.aht<=OBJ_AHT?G:R;}),borderRadius:3,barThickness:18}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:false},
+        annotation:{annotations:{ahtLine:{type:'line',xMin:OBJ_AHT,xMax:OBJ_AHT,
+          borderColor:'#1F2937',borderWidth:2,borderDash:[6,4],
+          label:{content:'Obj 4m30s',display:true,position:'start',
+            backgroundColor:'rgba(31,41,55,0.85)',color:'#fff',font:{size:10,weight:'bold'},padding:4}}}}},
+      scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10},callback:function(v){return fa(v);}},min:0},
+              y:{grid:{display:false},ticks:{font:{size:10}}}}}}); 
+
+  // ── DISTRIBUCIÓN / LOGIN ──
+  // Fichas — solo en semana completa (acumulado semanal)
+  if(curDay==='all'){
+    var fichasSorted=[...AG].sort(function(a,b){return b.fichas-a.fichas;});
+    mk('cS1F','bar',fichasSorted.map(function(r){return r.ag.split(',')[0];}),
+      [{label:'Fichas',data:fichasSorted.map(function(r){return r.fichas;}),
+        backgroundColor:fichasSorted.map(function(r){return r.fichas>=100?R:r.fichas>=20?AM:'#86EFAC';}),
+        borderRadius:3,barThickness:18}],
+      {indexAxis:'y',scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}},
+       plugins:{legend:{display:false}},
+       animation:{onComplete:function(){
+         var chart=this,ctx=chart.ctx,meta=chart.getDatasetMeta(0);
+         ctx.save();ctx.font='bold 11px Barlow,sans-serif';ctx.textBaseline='middle';
+         meta.data.forEach(function(bar,i){
+           var v=fichasSorted[i].fichas;if(v===0)return;
+           var barW=bar.x-chart.scales.x.getPixelForValue(0);
+           if(barW>20){ctx.fillStyle='#fff';ctx.textAlign='right';ctx.fillText(v,bar.x-5,bar.y);}
+           else{ctx.fillStyle='#374151';ctx.textAlign='left';ctx.fillText(v,bar.x+4,bar.y);}
+         });ctx.restore();
+       }}});
+    document.getElementById('cS1Fcard').style.display='block';
+  } else {
+    document.getElementById('cS1Fcard').style.display='none';
+  }
+  if(curDay==='all'){
+    // Doughnut with team averages per agent per day
+    var n=AG.length;
+    var avgConv=Math.round(AG.reduce(function(s,r){return s+r.conv/r.dias;},0)/n);
+    var avgDes=Math.round(AG.reduce(function(s,r){return s+r.des/r.dias;},0)/n);
+    var avgBO=Math.round(AG.reduce(function(s,r){return s+r.bo/r.dias;},0)/n);
+    var avgSup=Math.round(AG.reduce(function(s,r){return s+r.sup/r.dias;},0)/n);
+    var avgAux=Math.round(AG.reduce(function(s,r){return s+r.aux/r.dias;},0)/n);
+    var avgHold=Math.round(AG.reduce(function(s,r){return s+r.hold/r.dias;},0)/n);
+    var avgLogin=Math.round(AG.reduce(function(s,r){return s+r.login/r.dias;},0)/n);
+    var avgOtros=Math.max(0,avgLogin-avgConv-avgDes-avgBO-avgSup-avgAux-avgHold);
+    if(chts['cS1T'])chts['cS1T'].destroy();
+    chts['cS1T']=new Chart(document.getElementById('cS1T'),{type:'doughnut',
+      data:{labels:['Conversación','Descanso','BackOffice','Supervisor','Auxiliar','Hold','Otros'],
+            datasets:[{data:[avgConv,avgDes,avgBO,avgSup,avgAux,avgHold,avgOtros],
+              backgroundColor:[P,'#D97706','#DB2777',G,R,'#0EA5E9','#9CA3AF'],borderWidth:2,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:true,position:'bottom',labels:{font:{size:10},boxWidth:10,padding:6}},
+          tooltip:{callbacks:{label:function(ctx){return ' '+fh(ctx.raw)+' prom./agente/día';}}}},
+        title:{display:false}}});
+  } else {
+    // Login bar chart by agent for selected day — all agents, with 6h line
+    var dayData=getData();
+    var dSorted=[...dayData].sort(function(a,b){return b.login-a.login;});
+    if(chts['cS1T'])chts['cS1T'].destroy();
+    chts['cS1T']=new Chart(document.getElementById('cS1T'),{type:'bar',
+      data:{labels:dSorted.map(function(r){return r.ag.split(',')[0];}),
+        datasets:[{label:'Login',data:dSorted.map(function(r){return r.noData?0:r.login;}),
+          backgroundColor:dSorted.map(function(r){return r.noData?'#E5E7EB':P;}),borderRadius:3,barThickness:18}]},
+      options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+        plugins:{legend:{display:false},
+          annotation:{annotations:{loginLine:{type:'line',xMin:360,xMax:360,
+            borderColor:'#1F2937',borderWidth:2,borderDash:[6,4],
+            label:{content:'6 horas',display:true,position:'start',
+              backgroundColor:'rgba(31,41,55,0.85)',color:'#fff',font:{size:10,weight:'bold'},padding:4}}}}},
+        scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:9},callback:function(v){return fh(v);}},min:0},
+                y:{grid:{display:false},ticks:{font:{size:9}}}}}});
+  }
+}
+
+function renderTable(data){
+  var s=[...data].sort(function(a,b){return b.ll-a.ll;});
+  var isAll=curDay==='all';
+  // Update table header dynamically
+  var thead=document.querySelector('#tbS1').closest('table').querySelector('thead tr');
+  if(isAll){
+    thead.innerHTML='<th>Agente</th><th class="tr">Llamadas</th><th class="tr">AHT</th><th class="tr">Login</th><th class="tr">Conversación</th><th class="tr">Hold</th><th class="tr">Fichas T.O.</th><th class="tr">Días</th><th>Obj. ll.</th><th>Obj. AHT</th>';
+  } else {
+    thead.innerHTML='<th>Agente</th><th class="tr">Llamadas</th><th class="tr">AHT</th><th class="tr">Login</th><th>Obj. ll.</th><th>Obj. AHT</th>';
+  }
+  document.getElementById('tbS1').innerHTML=s.map(function(r){
+    var bll=r.noData?'b-gray':r.ll>=OBJ_LL?'bg':'br';
+    var baht=r.noData?'b-gray':r.aht<=OBJ_AHT?'bg':'br';
+    var llLabel=r.noData?'—':r.ll>=OBJ_LL?'OK':'Bajo';
+    var ahtLabel=r.noData?'—':r.aht<=OBJ_AHT?'OK':'Alto';
+    if(isAll){
+      return '<tr'+(r.noData?' style="opacity:.35"':'')+'>'+
+        '<td>'+r.ag+'</td>'+
+        '<td class="tr"><strong>'+(r.noData?'—':r.ll)+'</strong></td>'+
+        '<td class="tr">'+(r.noData?'—':fa(r.aht))+'</td>'+
+        '<td class="tr">'+(r.noData?'—':fh(r.login))+'</td>'+
+        '<td class="tr">'+fh(r.conv)+'</td>'+
+        '<td class="tr">'+fh(r.hold)+'</td>'+
+        '<td class="tr"><strong>'+r.fichas+'</strong></td>'+
+        '<td class="tr">'+r.dias+'</td>'+
+        '<td><span class="bdg '+bll+'">'+llLabel+'</span></td>'+
+        '<td><span class="bdg '+baht+'">'+ahtLabel+'</span></td></tr>';
+    } else {
+      return '<tr'+(r.noData?' style="opacity:.35"':'')+'>'+
+        '<td>'+r.ag+'</td>'+
+        '<td class="tr"><strong>'+(r.noData?'—':r.ll)+'</strong></td>'+
+        '<td class="tr">'+(r.noData?'—':fa(r.aht))+'</td>'+
+        '<td class="tr">'+(r.noData?'—':fh(r.login))+'</td>'+
+        '<td><span class="bdg '+bll+'">'+llLabel+'</span></td>'+
+        '<td><span class="bdg '+baht+'">'+ahtLabel+'</span></td></tr>';
+    }
+  }).join('');
+}
+
+function swDay(day,el){
+  curDay=day;
+  document.querySelectorAll('.db').forEach(function(b){b.classList.remove('active');});
+  el.classList.add('active');
+  var lbl=day==='all'?'Semana completa':el.textContent;
+  document.getElementById('ctLl').textContent='Llamadas por agente — '+lbl;
+  document.getElementById('ctTbl').textContent='Tabla detalle — '+lbl;
+  document.getElementById('ctDist').textContent=(day==='all'?'Distribución del tiempo — equipo (semana)':'Login por agente — '+lbl);
+  var data=getData();
+  renderKpi(data);renderCharts(data);renderTable(data);
+}
+
+function buildResumen(){
+  mk('cRD','bar',DIAS.map(function(r){return r.dia;}),[{label:'Llamadas',data:DIAS.map(function(r){return r.ll;}),backgroundColor:P,borderRadius:4}],
+    {scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}}},plugins:{legend:{display:false}}});
+  mk('cRA','line',DIAS.map(function(r){return r.dia;}),[{label:'AHT',data:DIAS.map(function(r){return r.aht;}),borderColor:P,backgroundColor:'rgba(107,33,168,.1)',fill:true,tension:.3,pointRadius:5,pointBackgroundColor:P}],
+    {scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{ticks:{font:{size:10},callback:function(v){return fa(v);}}}},plugins:{legend:{display:false}}});
+  var fichasData=AG.map(function(r){
+    var s2=typeof AG2!=='undefined'?AG2.find(function(x){return x.ag===r.ag;}):null;
+    return {op:r.ag.split(',')[0],total:r.fichas+(s2?s2.fichas:0),s1:r.fichas,s2:s2?s2.fichas:0};
+  });
+  if(typeof AG2!=='undefined'){
+    AG2.forEach(function(r){
+      if(!AG.find(function(x){return x.ag===r.ag;})){
+        fichasData.push({op:r.ag.split(',')[0],total:r.fichas,s1:0,s2:r.fichas});
+      }
+    });
+  }
+  fichasData.sort(function(a,b){return b.total-a.total;});
+  mk('cRF','bar',fichasData.map(function(r){return r.op;}),
+    [{label:'Fichas',data:fichasData.map(function(r){return r.total;}),
+      backgroundColor:fichasData.map(function(r){return r.total>=100?R:r.total>=20?AM:'#86EFAC';}),
+      borderRadius:3,barThickness:18}],
+    {indexAxis:'y',scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}},
+     plugins:{legend:{display:false},
+       tooltip:{callbacks:{label:function(ctx){var r=fichasData[ctx.dataIndex];return[' Total: '+r.total,' Sem.1: '+r.s1+' | Sem.2: '+r.s2];}}}},
+     animation:{onComplete:function(){
+       var chart=this,ctx=chart.ctx,meta=chart.getDatasetMeta(0);
+       ctx.save();ctx.font='bold 11px Barlow,sans-serif';ctx.textBaseline='middle';
+       meta.data.forEach(function(bar,i){
+         var v=fichasData[i].total;if(v===0)return;
+         var barW=bar.x-chart.scales.x.getPixelForValue(0);
+         if(barW>20){ctx.fillStyle='#fff';ctx.textAlign='right';ctx.fillText(v,bar.x-5,bar.y);}
+         else{ctx.fillStyle='#374151';ctx.textAlign='left';ctx.fillText(v,bar.x+4,bar.y);}
+       });ctx.restore();
+     }}});
+  document.getElementById('tbRes').innerHTML=AG.map(function(r,i){
+    var bll=r.ll>=(OBJ_LL*r.dias)?'bg':'br';
+    return '<tr><td style="color:var(--g500);font-size:11px">'+(i+1)+'</td><td>'+r.ag+'</td>'+
+      '<td class="tr"><strong>'+r.ll+'</strong></td><td class="tr">'+fa(r.aht)+'</td>'+
+      '<td class="tr">'+fh(r.login)+'</td><td class="tr">'+fh(r.conv)+'</td>'+
+      '<td class="tr"><strong>'+r.fichas+'</strong></td><td class="tr">'+r.dias+'</td>'+
+      '<td><span class="bdg '+bll+'">'+(r.ll>=(OBJ_LL*r.dias)?'OK':'Bajo')+'</span></td></tr>';
+  }).join('');
+}
+
+var calidadBuilt=false;
+
+// ── Animated KPI counter ──
+function animateCounters(paneId){
+  var pane=document.getElementById('pane-'+paneId);
+  if(!pane) return;
+  pane.querySelectorAll('.kv').forEach(function(el){
+    var txt=el.textContent.trim();
+    var num=parseFloat(txt.replace(/[^0-9.]/g,''));
+    var suffix=txt.replace(/[0-9.,]/g,'').trim();
+    if(isNaN(num)||num<10) return;
+    var start=0,duration=600,step=16;
+    var inc=num/(duration/step);
+    var timer=setInterval(function(){
+      start=Math.min(start+inc,num);
+      var disp=Number.isInteger(num)?Math.round(start):start.toFixed(1);
+      el.textContent=disp+(suffix?' '+suffix:'');
+      if(start>=num) clearInterval(timer);
+    },step);
+  });
+}
+
+function swWeek(id,el){
+  if(el.classList.contains('na'))return;
+  document.querySelectorAll('.week-tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('active');});
+  el.classList.add('active');
+  document.getElementById('pane-'+id).classList.add('active');
+  setTimeout(function(){Object.values(chts).forEach(function(c){c.resize();});},60);
+  if(id==='calidad'&&!calidadBuilt){buildCalidad();calidadBuilt=true;}
+  if(id==='qa'&&!qaBuilt){buildQA();qaBuilt=true;}
+}
+
+document.getElementById('topDate').textContent=new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+buildResumen();
+renderKpi(AG);renderCharts(AG);renderTable(AG);
+</script>
+
+<style>
+.fil-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.fil-row label{font-size:11px;font-weight:600;color:var(--g500);text-transform:uppercase;letter-spacing:.05em}
+.fil-sel{font-family:var(--font);font-size:12px;padding:5px 10px;border-radius:6px;border:1.5px solid var(--g300);background:var(--white);color:var(--black);cursor:pointer}
+.fil-sel:focus{outline:none;border-color:var(--purple)}
+.mot-cc{color:#991B1B;background:#FEE2E2;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px}
+.mot-rr{color:#7C3AED;background:#EDE9FE;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px}
+.mot-fc{color:#854D0E;background:#FEF9C3;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px}
+.mot-fr{color:#166534;background:#DCFCE7;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px}
+.mot-ti{color:#1E40AF;background:#DBEAFE;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px}
+.id-chip{font-family:monospace;font-size:11px;color:var(--purple);font-weight:600}
+</style>
+
+<!-- CALIDAD -->
+<div id="pane-calidad" class="pane">
+  <div class="ph-hdr">
+    <div><h2>Calidad · <span>Derivaciones a Supervisor</span></h2><div class="ph-sub">Llamadas derivadas a Lautaro — Feb a May 2026 · 339 casos</div></div>
+  </div>
+
+  <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
+    <div class="kpi ac"><div class="kl">Total derivaciones</div><div class="kv">339</div><div class="ks">Feb – May 2026 · 5 motivos</div></div>
+    <div class="kpi"><div class="kl">Febrero</div><div class="kv">87</div><div class="ks">inicio del período</div><div class="kpi-trend t-neu">— línea base</div></div>
+    <div class="kpi r"><div class="kl">Marzo</div><div class="kv">116</div><div class="ks">pico del período</div><div class="kpi-trend t-up">↑ +33% vs Feb</div></div>
+    <div class="kpi g"><div class="kl">Abril</div><div class="kv">55</div><div class="ks">reducción importante</div><div class="kpi-trend t-dn">↓ −53% vs Mar</div></div>
+    <div class="kpi"><div class="kl">Mayo</div><div class="kv">81</div><div class="ks">al 30/05 · cierre de mes</div><div class="kpi-trend t-up">↑ +47% vs Abr</div></div>
+  </div>
+
+  <div class="row2">
+    <div class="card">
+      <div class="ct">Evolución mensual de derivaciones</div>
+      <div style="height:190px"><canvas id="cCalMes"></canvas></div>
+    </div>
+    <div class="card" style="position:relative">
+      <div class="cal-hdr" style="margin-bottom:6px">
+        <div class="ct" style="margin:0" id="motTitle">Derivaciones por motivo — histórico completo</div>
+        <div class="cal-drop-wrap">
+          <div class="cal-drop-btn" onclick="toggleMotDrop(this)">
+            <span id="motDropLabel">📅 Todos los meses</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="cal-drop-menu" id="motDropMenu">
+            <div class="cal-drop-item active" onclick="selectMotMes(0,this,'📅 Todos los meses','histórico completo')">📅 Todos los meses</div>
+            <div class="cal-drop-item" onclick="selectMotMes(2,this,'📆 Febrero 2026','Febrero 2026')">📆 Febrero 2026</div>
+            <div class="cal-drop-item" onclick="selectMotMes(3,this,'📆 Marzo 2026','Marzo 2026')">📆 Marzo 2026</div>
+            <div class="cal-drop-item" onclick="selectMotMes(4,this,'📆 Abril 2026','Abril 2026')">📆 Abril 2026</div>
+            <div class="cal-drop-item" onclick="selectMotMes(5,this,'📆 Mayo 2026','Mayo 2026')">📆 Mayo 2026</div>
+          </div>
+        </div>
+      </div>
+      <div style="height:190px"><canvas id="cCalMot"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">Total de derivaciones por mes</div>
+    <div style="height:220px"><canvas id="cCalMesMot"></canvas></div>
+  </div>
+
+
+
+
+  <div class="card" style="position:relative">
+    <div class="cal-hdr">
+      <div class="ct" style="margin:0" id="calOpTitle">Total derivaciones por operador — Histórico completo</div>
+      <div class="cal-drop-wrap">
+        <div class="cal-drop-btn" onclick="toggleCalDrop(this)">
+          <span id="calDropLabel">📅 Todos los meses</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="cal-drop-menu" id="calDropMenu">
+          <div class="cal-drop-item active" onclick="selectCalMes(0,this,'📅 Todos los meses','Histórico completo')">📅 Todos los meses</div>
+          <div class="cal-drop-item" onclick="selectCalMes(2,this,'📆 Febrero 2026','Febrero 2026')">📆 Febrero 2026</div>
+          <div class="cal-drop-item" onclick="selectCalMes(3,this,'📆 Marzo 2026','Marzo 2026')">📆 Marzo 2026</div>
+          <div class="cal-drop-item" onclick="selectCalMes(4,this,'📆 Abril 2026','Abril 2026')">📆 Abril 2026</div>
+          <div class="cal-drop-item" onclick="selectCalMes(5,this,'📆 Mayo 2026','Mayo 2026')">📆 Mayo 2026</div>
+        </div>
+      </div>
+    </div>
+    <div style="height:620px"><canvas id="cCalOp"></canvas></div>
+    <div id="calOpTotal" style="text-align:right;padding:10px 16px 2px;font:700 13px 'Barlow',sans-serif;color:#4C1D95;border-top:2px solid #EDE9FE;margin-top:4px;"></div>
+  </div>
+
+
+</div>
+
+</div>
+
+<script>
+// Derivaciones data moved to charts for performance
+
+
+// Build operator filter
+function motBadge(m){
+  if(m.indexOf('conflictivo')>-1) return '<span class="mot-cc">Cliente conflictivo</span>';
+  if(m.indexOf('segunda')>-1)     return '<span class="mot-rr">Reclamo 2da línea</span>';
+  if(m.indexOf('Control')>-1)     return '<span class="mot-fc">Falta de control</span>';
+  if(m.indexOf('respuesta')>-1)   return '<span class="mot-fr">Falta resp. supervisor</span>';
+  if(m.indexOf('ipificaci')>-1)   return '<span class="mot-ti">Tipificación incorrecta</span>';
+  return '<span>'+m+'</span>';
+}
+
+
+
+// ── Per-operator per-month derivaciones data ──
+var OP_MONTHLY={
+  'Blasco':         {2:{cc:6,rr:0,fc:0,fr:0,ti:0,total:6},  3:{cc:8,rr:2,fc:1,fr:0,ti:3,total:14},4:{cc:2,rr:2,fc:1,fr:0,ti:3,total:8}, 5:{cc:4,rr:7,fc:1,fr:0,ti:1,total:13}},
+  'Hernandez':      {2:{cc:13,rr:0,fc:0,fr:1,ti:0,total:14},3:{cc:12,rr:0,fc:0,fr:1,ti:0,total:13},4:{cc:1,rr:0,fc:0,fr:0,ti:1,total:2},5:{cc:3,rr:4,fc:0,fr:0,ti:0,total:7}},
+  'Guiroy':         {2:{cc:2,rr:0,fc:0,fr:0,ti:0,total:2},  3:{cc:6,rr:7,fc:0,fr:0,ti:0,total:13},4:{cc:5,rr:1,fc:0,fr:0,ti:0,total:6}, 5:{cc:4,rr:4,fc:0,fr:0,ti:0,total:8}},
+  'Jara':           {2:{cc:4,rr:1,fc:4,fr:0,ti:0,total:9},  3:{cc:2,rr:4,fc:1,fr:1,ti:0,total:8}, 4:{cc:5,rr:1,fc:0,fr:0,ti:0,total:6}, 5:{cc:2,rr:2,fc:1,fr:0,ti:1,total:6}},
+  'Las Heras':      {2:{cc:4,rr:0,fc:5,fr:1,ti:0,total:10}, 3:{cc:3,rr:1,fc:4,fr:0,ti:0,total:8}, 4:{cc:2,rr:1,fc:2,fr:0,ti:0,total:5}, 5:{cc:0,rr:4,fc:0,fr:0,ti:0,total:4}},
+  'Jorge':          {2:{cc:8,rr:1,fc:0,fr:0,ti:0,total:9},  3:{cc:5,rr:2,fc:0,fr:0,ti:0,total:7}, 4:{cc:2,rr:1,fc:0,fr:0,ti:0,total:3}, 5:{cc:2,rr:4,fc:0,fr:0,ti:1,total:7}},
+  'Munos':          {2:{cc:4,rr:0,fc:1,fr:0,ti:0,total:5},  3:{cc:3,rr:1,fc:0,fr:0,ti:0,total:4}, 4:{cc:4,rr:1,fc:0,fr:0,ti:0,total:5}, 5:{cc:1,rr:3,fc:1,fr:0,ti:0,total:5}},
+  'Ballesteros':    {2:{cc:8,rr:0,fc:0,fr:0,ti:0,total:8},  3:{cc:7,rr:1,fc:0,fr:0,ti:0,total:8}, 4:{cc:1,rr:0,fc:0,fr:0,ti:0,total:1}, 5:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0}},
+  'Velazquez':      {2:{cc:1,rr:0,fc:1,fr:0,ti:0,total:2},  3:{cc:4,rr:2,fc:0,fr:1,ti:0,total:7}, 4:{cc:2,rr:0,fc:0,fr:0,ti:1,total:3}, 5:{cc:1,rr:1,fc:0,fr:0,ti:0,total:2}},
+  'Antunez':        {2:{cc:1,rr:0,fc:0,fr:0,ti:0,total:1},  3:{cc:6,rr:0,fc:0,fr:1,ti:0,total:7}, 4:{cc:1,rr:0,fc:1,fr:0,ti:0,total:2}, 5:{cc:0,rr:1,fc:1,fr:0,ti:0,total:2}},
+  'Guglielmi':      {2:{cc:3,rr:0,fc:0,fr:0,ti:0,total:3},  3:{cc:7,rr:1,fc:0,fr:0,ti:0,total:8}, 4:{cc:1,rr:0,fc:0,fr:0,ti:0,total:1}, 5:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0}},
+  'Molina':         {2:{cc:3,rr:0,fc:0,fr:0,ti:0,total:3},  3:{cc:6,rr:0,fc:0,fr:0,ti:0,total:6}, 4:{cc:1,rr:0,fc:0,fr:0,ti:0,total:1}, 5:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0}},
+  'Falcon':         {2:{cc:2,rr:0,fc:0,fr:0,ti:0,total:2},  3:{cc:4,rr:2,fc:0,fr:0,ti:0,total:6}, 4:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0}, 5:{cc:0,rr:1,fc:0,fr:0,ti:0,total:1}},
+  'Gonzalez':       {2:{cc:3,rr:0,fc:1,fr:0,ti:0,total:4},  3:{cc:1,rr:0,fc:0,fr:0,ti:0,total:1}, 4:{cc:2,rr:1,fc:1,fr:0,ti:0,total:4}, 5:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0}},
+  'Alfonso':        {2:{cc:3,rr:0,fc:0,fr:0,ti:0,total:3},  3:{cc:2,rr:0,fc:0,fr:0,ti:0,total:2}, 4:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0}, 5:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0}},
+  'Maidana':        {2:{cc:1,rr:0,fc:0,fr:0,ti:0,total:1},  3:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0}, 4:{cc:1,rr:1,fc:0,fr:0,ti:0,total:2}, 5:{cc:0,rr:2,fc:0,fr:0,ti:0,total:2}},
+  'Coronel':        {2:{cc:2,rr:0,fc:0,fr:0,ti:0,total:2},  3:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0}, 4:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0}, 5:{cc:1,rr:1,fc:0,fr:0,ti:0,total:2}},
+  'Menendez':       {2:{cc:1,rr:0,fc:0,fr:0,ti:0,total:1},  3:{cc:0,rr:2,fc:0,fr:0,ti:0,total:2}, 4:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0}, 5:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0}},
+  'Huacaña Sanchez':{2:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0},  3:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0}, 4:{cc:1,rr:0,fc:0,fr:0,ti:0,total:1}, 5:{cc:0,rr:1,fc:0,fr:0,ti:0,total:1}},
+  'Benitez':        {2:{cc:1,rr:0,fc:0,fr:0,ti:0,total:1},  3:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0}, 4:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0}, 5:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0}},
+  'Milanes':        {2:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0},  3:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0}, 4:{cc:0,rr:0,fc:0,fr:0,ti:0,total:0}, 5:{cc:0,rr:1,fc:0,fr:0,ti:0,total:1}},
+};
+
+var calOpMes=0; // 0=todos, 2=feb, 3=mar, 4=abr, 5=may
+var MES_LABELS={0:'Histórico completo',2:'Febrero 2026',3:'Marzo 2026',4:'Abril 2026',5:'Mayo 2026'};
+
+function toggleCalDrop(btn){
+  btn.classList.toggle('open');
+  document.getElementById('calDropMenu').classList.toggle('open');
+}
+function selectCalMes(mes,item,label,titleSuffix){
+  calOpMes=mes;
+  // Update dropdown display
+  document.getElementById('calDropLabel').textContent=label;
+  document.querySelectorAll('.cal-drop-item').forEach(function(i){i.classList.remove('active');});
+  item.classList.add('active');
+  // Close dropdown
+  var btn=document.querySelector('.cal-drop-btn');
+  btn.classList.remove('open');
+  document.getElementById('calDropMenu').classList.remove('open');
+  // Update title
+  var t=document.getElementById('calOpTitle');
+  if(t) t.textContent='Total derivaciones por operador — '+titleSuffix;
+  buildCalOp();
+}
+// Close dropdown when clicking outside
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.cal-drop-wrap')){
+    var btn=document.querySelector('.cal-drop-btn');
+    var menu=document.getElementById('calDropMenu');
+    if(btn) btn.classList.remove('open');
+    if(menu) menu.classList.remove('open');
+  }
+});
+function filterCalOp(mes,el){ selectCalMes(mes,el,'',''); }
+
+function buildCalOp(){
+  var ops=Object.keys(OP_MONTHLY);
+  // Build filtered OP_DATA
+  var filtered=ops.map(function(op){
+    var d;
+    if(calOpMes===0){
+      // sum all months
+      d={cc:0,rr:0,fc:0,fr:0,ti:0,total:0};
+      [2,3,4,5].forEach(function(m){
+        var md=OP_MONTHLY[op][m];
+        d.cc+=md.cc;d.rr+=md.rr;d.fc+=md.fc;d.fr+=md.fr;d.ti+=md.ti;d.total+=md.total;
+      });
+    } else {
+      d=OP_MONTHLY[op][calOpMes];
+    }
+    return {op:op,cc:d.cc,rr:d.rr,fc:d.fc,fr:d.fr,ti:d.ti,total:d.total};
+  }).filter(function(r){return r.total>0;})
+    .sort(function(a,b){return b.total-a.total;});
+
+  // Update chart title
+  var ct=document.querySelector('#pane-calidad .cal-hdr .ct');
+  if(ct) ct.textContent='Derivaciones por operador — '+MES_LABELS[calOpMes];
+
+  if(!filtered.length){
+    if(chts['cCalOp'])chts['cCalOp'].destroy();
+    return;
+  }
+
+  if(chts['cCalOp'])chts['cCalOp'].destroy();
+  var height=Math.max(280, filtered.length*38+80);
+  var canvas=document.getElementById('cCalOp');
+  if(canvas) canvas.parentElement.style.height=height+'px';
+
+  chts['cCalOp']=new Chart(document.getElementById('cCalOp'),{type:'bar',
+    data:{labels:filtered.map(function(r){return r.op;}),datasets:[
+      {label:'Cliente conflictivo',     data:filtered.map(function(r){return r.cc;}),backgroundColor:'#7B2FBE',barThickness:20,borderRadius:0},
+      {label:'Reclamo 2da línea',       data:filtered.map(function(r){return r.rr;}),backgroundColor:'#DB2777',barThickness:20,borderRadius:0},
+      {label:'Falta de control',        data:filtered.map(function(r){return r.fc;}),backgroundColor:'#818CF8',barThickness:20,borderRadius:0},
+      {label:'Falta resp. supervisor',  data:filtered.map(function(r){return r.fr;}),backgroundColor:'#F0ABFC',barThickness:20,borderRadius:0},
+      {label:'Tipificación incorrecta', data:filtered.map(function(r){return r.ti;}),backgroundColor:'#3B82F6',barThickness:20,borderRadius:0},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      animation:{duration:400},
+      plugins:{
+        legend:{display:true,position:'top',align:'start',labels:{font:{size:11},boxWidth:12,padding:10}},
+        tooltip:{mode:'index',intersect:false,callbacks:{
+          title:function(items){return items[0].label;},
+          footer:function(items){
+            var tot=items.reduce(function(s,i){return s+i.raw;},0);
+            var pct=calOpMes===0?'':(': '+tot+' de '+([87,116,55,48][[2,3,4,5].indexOf(calOpMes)])+' del mes');
+            return 'Total'+pct+': '+tot;
+          }}}},
+      scales:{
+        x:{stacked:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},
+        y:{stacked:true,grid:{display:false},ticks:{font:{size:11}}}},
+      animation:{duration:400,onComplete:function(){
+        var chart=this,ctx=chart.ctx;
+        ctx.save();
+        ctx.font='bold 11px Barlow,sans-serif';
+        ctx.textBaseline='middle';
+        ctx.textAlign='center';
+
+        // Draw count on each colored segment, per dataset
+        var motKeys=['cc','rr','fc','fr','ti'];
+        var minWidthInside=16; // min width to draw inside
+        var minWidthAny=6;     // min width to draw at all (outside if too narrow)
+        chart.data.datasets.forEach(function(ds,di){
+          var meta=chart.getDatasetMeta(di);
+          meta.data.forEach(function(bar,i){
+            var val=filtered[i][motKeys[di]];
+            if(!val||val===0) return;
+            var x0=di===0 ? chart.scales.x.getPixelForValue(0) : chart.getDatasetMeta(di-1).data[i].x;
+            var x1=bar.x;
+            var segW=x1-x0;
+            var y=bar.y;
+            var lightDs=[3]; // FR (#F0ABFC) = dark text
+            if(segW>=minWidthInside){
+              // Wide enough: number centered inside segment
+              ctx.fillStyle=lightDs.indexOf(di)>-1?'#4C1D95':'#fff';
+              ctx.textAlign='center';
+              ctx.fillText(val,(x0+x1)/2,y);
+            } else if(segW>=minWidthAny){
+              // Narrow: number outside bar with small leader line
+              ctx.fillStyle='#374151';
+              ctx.textAlign='left';
+              ctx.fillText(val,x1+3,y);
+            }
+          });
+        });
+
+        ctx.restore();
+        // Update total footer
+        var MES_TOTALS={0:339,2:87,3:116,4:55,5:81};
+        var MES_NAMES={0:'histórico',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo'};
+        var footer=document.getElementById('calOpTotal');
+        if(footer){
+          footer.innerHTML='Total '+MES_NAMES[calOpMes]+': <strong style="color:#4C1D95">'+MES_TOTALS[calOpMes]+' derivaciones</strong>';
+        }
+      }}}}); 
+}
+
+
+// ── Donut motivo monthly data ──
+var MOT_DATA={
+  0:{cc:191,rr:61,fc:26,fr:6,ti:11},  // todos
+  2:{cc:70, rr:2,  fc:12,fr:2,ti:0},  // feb
+  3:{cc:76, rr:25, fc:6, fr:4,ti:3},  // mar
+  4:{cc:31, rr:9,  fc:5, fr:0,ti:5},  // abr
+  5:{cc:14, rr:25, fc:3, fr:0,ti:3},  // may
+};
+var motMes=0;
+
+function buildMotDrop(){
+  var d=MOT_DATA[motMes];
+  var vals=[d.cc,d.rr,d.fc,d.fr,d.ti];
+  var labels=['Cliente conflictivo','Reclamo 2da línea','Falta de control','Falta resp. sup.','Tipificación incorrecta'];
+  var colors=['#7B2FBE','#DB2777','#818CF8','#F0ABFC','#3B82F6'];
+  // Filter out zero values for cleaner donut
+  var filtLabels=[],filtVals=[],filtColors=[];
+  labels.forEach(function(l,i){
+    if(vals[i]>0){filtLabels.push(l);filtVals.push(vals[i]);filtColors.push(colors[i]);}
+  });
+  if(chts['cCalMot'])chts['cCalMot'].destroy();
+  chts['cCalMot']=new Chart(document.getElementById('cCalMot'),{type:'doughnut',
+    data:{labels:filtLabels,datasets:[{data:filtVals,
+      backgroundColor:filtColors,borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:true,position:'right',labels:{font:{size:10},boxWidth:10,padding:8}},
+        tooltip:{callbacks:{label:function(ctx){
+          var tot=ctx.dataset.data.reduce(function(a,b){return a+b;},0);
+          return ' '+ctx.raw+' casos ('+Math.round(ctx.raw/tot*100)+'%)';
+        }}}},
+      animation:{onComplete:function(){
+        var chart=this,ctx=chart.ctx;
+        var meta=chart.getDatasetMeta(0);
+        var tot=filtVals.reduce(function(a,b){return a+b;},0);
+        ctx.save();
+        ctx.font='bold 11px Barlow,sans-serif';
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        meta.data.forEach(function(arc,i){
+          var pct=Math.round(filtVals[i]/tot*100);
+          if(pct<4) return; // skip tiny slices
+          var angle=(arc.startAngle+arc.endAngle)/2;
+          var r=(arc.innerRadius+arc.outerRadius)/2;
+          var x=arc.x+Math.cos(angle)*r;
+          var y=arc.y+Math.sin(angle)*r;
+          ctx.fillStyle='#fff';
+          ctx.fillText(pct+'%',x,y);
+        });
+        ctx.restore();
+      }}}});
+}
+
+function toggleMotDrop(btn){
+  btn.classList.toggle('open');
+  document.getElementById('motDropMenu').classList.toggle('open');
+}
+function selectMotMes(mes,item,label,titleSuffix){
+  motMes=mes;
+  document.getElementById('motDropLabel').textContent=label;
+  document.querySelectorAll('#motDropMenu .cal-drop-item').forEach(function(i){i.classList.remove('active');});
+  item.classList.add('active');
+  var btn=document.querySelector('#motDropMenu').previousElementSibling;
+  if(btn){btn.classList.remove('open');}
+  document.getElementById('motDropMenu').classList.remove('open');
+  var t=document.getElementById('motTitle');
+  if(t) t.textContent='Derivaciones por motivo — '+titleSuffix;
+  buildMotDrop();
+}
+
+function buildCalidad(){
+  // ── Evolución mensual ──
+  var meses=['Feb 2026','Mar 2026','Abr 2026','May 2026'];
+  var mvals=[87,116,55,81];
+  var maxV=Math.max.apply(null,mvals), minV=Math.min.apply(null,mvals);
+  // Talleres: índice 1 = Mar, índice 2 = Abr
+  var TALLERES=[
+    {idx:1, label:'📋 Taller',  fechas:'18–19 mar', titulo:'Taller de Derivación a Supervisor', color:'#059669'},
+    {idx:2, label:'📋 Taller',  fechas:'15–16 abr', titulo:'Taller de Uso de Tiempos Muertos',  color:'#D97706'},
+  ];
+  // Eventos especiales: índice 3 = May
+  var EVENTOS=[
+    {idx:3, titulo:'🔴 EVENTO HOT SALE', color:'#DC2626'},
+  ];
+  if(chts['cCalMes'])chts['cCalMes'].destroy();
+  chts['cCalMes']=new Chart(document.getElementById('cCalMes'),{type:'line',
+    data:{labels:meses,datasets:[{label:'Derivaciones',data:mvals,
+      borderColor:'#7B2FBE',backgroundColor:'rgba(123,47,190,.12)',
+      fill:true,tension:0.35,pointRadius:6,pointBackgroundColor:'#7B2FBE',
+      pointBorderColor:'#fff',pointBorderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:function(ctx){return ' '+ctx.raw+' derivaciones';}}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:11}}},
+              y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}},
+                 suggestedMin:0,suggestedMax:150}},
+      animation:{onComplete:function(){
+        var chart=this,ctx=chart.ctx,ds=chart.data.datasets[0],meta=chart.getDatasetMeta(0);
+        ctx.save();
+
+        // ── Valores en todos los puntos ──
+        ctx.font='bold 13px Barlow, sans-serif';ctx.textAlign='center';
+        meta.data.forEach(function(pt,i){
+          var v=ds.data[i];
+          // Color y posición según valor relativo
+          if(v===maxV){ctx.fillStyle='#7B2FBE';ctx.fillText(v,pt.x,pt.y-14);}
+          else if(v===minV){ctx.fillStyle='#7B2FBE';ctx.fillText(v,pt.x,pt.y+18);}
+          else{ctx.fillStyle='#6B7280';ctx.fillText(v,pt.x,pt.y-14);}
+        });
+
+        // ── Marcadores de taller ──
+        TALLERES.forEach(function(t){
+          var pt=meta.data[t.idx];
+          var x=pt.x, y=pt.y;
+          var col=t.color;
+
+          // Línea vertical punteada desde el punto hasta arriba
+          ctx.setLineDash([4,3]);
+          ctx.strokeStyle=col;
+          ctx.lineWidth=1.5;
+          ctx.beginPath();
+          ctx.moveTo(x,y-8);
+          ctx.lineTo(x,28);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Pin (rombo)
+          ctx.save();
+          ctx.translate(x,18);
+          ctx.rotate(Math.PI/4);
+          ctx.fillStyle=col;
+          ctx.beginPath();
+          ctx.rect(-6,-6,12,12);
+          ctx.fill();
+          ctx.restore();
+
+          // Etiqueta compacta sobre el pin
+          ctx.font='bold 9px Barlow,sans-serif';
+          ctx.fillStyle='#fff';
+          ctx.textAlign='center';
+          ctx.textBaseline='middle';
+          ctx.fillText('T',x,18);
+
+          // Tooltip-like box al costado
+          var boxX=x+14, boxY=10;
+          var txt1=t.titulo, txt2=t.fechas;
+          ctx.font='600 9px Barlow,sans-serif';
+          var w=ctx.measureText(txt1).width+12;
+          // Flip to left if close to right edge
+          if(boxX+w>chart.width-10) boxX=x-w-14;
+          ctx.fillStyle='rgba(255,255,255,0.96)';
+          ctx.strokeStyle=col;
+          ctx.lineWidth=1.5;
+          ctx.beginPath();
+          ctx.roundRect(boxX,boxY,w,32,4);
+          ctx.fill();ctx.stroke();
+          ctx.fillStyle=col;
+          ctx.textAlign='left';
+          ctx.textBaseline='top';
+          ctx.font='700 9px Barlow,sans-serif';
+          ctx.fillText(txt1,boxX+6,boxY+4);
+          ctx.font='400 8px Barlow,sans-serif';
+          ctx.fillStyle='#6B7280';
+          ctx.fillText(txt2,boxX+6,boxY+16);
+        });
+
+        // ── Eventos especiales (sin cuadro, solo texto en rojo) ──
+        EVENTOS.forEach(function(e){
+          var pt=meta.data[e.idx];
+          var x=pt.x, y=pt.y;
+          ctx.setLineDash([4,3]);
+          ctx.strokeStyle=e.color;
+          ctx.lineWidth=1.5;
+          ctx.beginPath();
+          ctx.moveTo(x,y-8);
+          ctx.lineTo(x,10);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.font='800 10px "Barlow Condensed",sans-serif';
+          ctx.fillStyle=e.color;
+          ctx.textAlign='center';
+          ctx.textBaseline='bottom';
+          ctx.fillText('🔴 EVENTO',x,9);
+          ctx.fillText('HOT SALE',x,20);
+        });
+
+        ctx.restore();
+      }}}});
+
+  // ── Donut por motivo — datos por mes ──
+  // buildMotDrop() called on init and on filter change
+  buildMotDrop();
+
+  // ── Stacked bar mes x motivo — 5 datasets ──
+  if(chts['cCalMesMot'])chts['cCalMesMot'].destroy();
+  chts['cCalMesMot']=new Chart(document.getElementById('cCalMesMot'),{type:'bar',
+    data:{labels:['Febrero 2026','Marzo 2026','Abril 2026','Mayo 2026'],datasets:[
+      {label:'Cliente conflictivo',       data:[70,76,31,21], backgroundColor:'#7B2FBE',borderRadius:0},
+      {label:'Reclamo 2da línea',         data:[2, 25, 9, 36], backgroundColor:'#DB2777',borderRadius:0},
+      {label:'Falta de control',          data:[12, 6, 5, 15], backgroundColor:'#818CF8',borderRadius:0},
+      {label:'Falta resp. supervisor',    data:[2,  4, 0, 0],  backgroundColor:'#F0ABFC',borderRadius:0},
+      {label:'Tipificación incorrecta',   data:[0,  3, 5, 3],  backgroundColor:'#3B82F6',borderRadius:0},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:true,position:'top',align:'start',labels:{font:{size:11},boxWidth:12,padding:10}},
+        tooltip:{mode:'index',intersect:false,
+          callbacks:{footer:function(items){return 'Total: '+items.reduce(function(s,i){return s+i.raw;},0);}}}},
+      scales:{
+        x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
+        y:{stacked:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}}}}});
+
+  // ── Por operador (horizontal stacked) — 5 motivos ──
+  var OP_DATA=[
+    {op:'Blasco',              cc:20,rr:7, fc:3,fr:0,ti:7, total:37},
+    {op:'Hernandez',           cc:28,rr:3, fc:0,fr:2,ti:1, total:34},
+    {op:'Guiroy',              cc:16,rr:12,fc:0,fr:0,ti:0, total:28},
+    {op:'Jara',                cc:12,rr:8, fc:6,fr:1,ti:1, total:28},
+    {op:'Las Heras',           cc:9, rr:6, fc:11,fr:1,ti:0,total:27},
+    {op:'Jorge',               cc:16,rr:6, fc:0,fr:0,ti:1, total:23},
+    {op:'Munos',               cc:12,rr:5, fc:2,fr:0,ti:0, total:19},
+    {op:'Jimenez Ballesteros', cc:16,rr:1, fc:0,fr:0,ti:0, total:17},
+    {op:'Velazquez',           cc:8, rr:2, fc:1,fr:1,ti:1, total:13},
+    {op:'Guglielmi',           cc:11,rr:1, fc:0,fr:0,ti:0, total:12},
+    {op:'Antunez',             cc:8, rr:1, fc:1,fr:1,ti:0, total:11},
+    {op:'Molina',              cc:10,rr:0, fc:0,fr:0,ti:0, total:10},
+    {op:'Falcon',              cc:6, rr:3, fc:0,fr:0,ti:0, total:9},
+    {op:'Valeria Silvana',     cc:3, rr:1, fc:2,fr:0,ti:0, total:6},
+    {op:'Alfonso',             cc:5, rr:0, fc:0,fr:0,ti:0, total:5},
+    {op:'Maidana',             cc:2, rr:2, fc:0,fr:0,ti:0, total:4},
+    {op:'Coronel',             cc:3, rr:1, fc:0,fr:0,ti:0, total:4},
+    {op:'Menendez',            cc:1, rr:2, fc:0,fr:0,ti:0, total:3},
+    {op:'Gonzalez',            cc:3, rr:0, fc:0,fr:0,ti:0, total:3},
+    {op:'Huacaña Sanchez',     cc:1, rr:0, fc:0,fr:0,ti:0, total:1},
+  ];
+  calOpMes=0; buildCalOp(); // ← operator chart built by filterCalOp/buildCalOp
+}
+</script>
+
+
+<!-- SEMANA 2 -->
+<div id="pane-s2" class="pane">
+  <div class="ph-hdr">
+    <div><h2>Semana 2 · <span>11 al 16 de Mayo</span></h2><div class="ph-sub">20 agentes · Lunes a Sábado · Campaña Frávega SAC · Nuevos: Arellano, Velazquez</div></div>
+    <div class="obj-pill">Obj. llamadas: <strong>≥ 60</strong> &nbsp;|&nbsp; Obj. AHT: <strong>≤ 4'30"</strong></div>
+  </div>
+  <div class="day-sel">
+    <label>Ver:</label>
+    <button class="db active" onclick="swDay2('all',this)">Semana completa</button>
+    <button class="db" onclick="swDay2('2026-05-11',this)">Lun 11/05</button>
+    <button class="db" onclick="swDay2('2026-05-12',this)">Mar 12/05</button>
+    <button class="db" onclick="swDay2('2026-05-13',this)">Mié 13/05</button>
+    <button class="db" onclick="swDay2('2026-05-14',this)">Jue 14/05</button>
+    <button class="db" onclick="swDay2('2026-05-15',this)">Vie 15/05</button>
+    <button class="db" onclick="swDay2('2026-05-16',this)">Sáb 16/05</button>
+  </div>
+  <div class="kpi-grid" id="kpiS2"></div>
+  <div class="card">
+    <div class="ct" id="ctLl2">Llamadas por agente — Semana completa</div>
+    <div style="height:620px"><canvas id="cS2L"></canvas></div>
+  </div>
+  <div class="row2">
+    <div class="card">
+      <div class="ct">AHT por agente</div>
+      <div style="height:620px"><canvas id="cS2A"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct" id="ctDist2">Distribución del tiempo — equipo (semana)</div>
+      <div style="height:580px"><canvas id="cS2T"></canvas></div>
+    </div>
+  </div>
+  <div class="card" id="cS2Fcard">
+    <div class="ct">Fichas time out por operador — Semana 2 (acumulado semanal)</div>
+    <div style="height:620px"><canvas id="cS2F"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="ct" id="ctTbl2">Tabla detalle — Semana completa</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Agente</th><th class="tr">Llamadas</th><th class="tr">AHT</th><th class="tr">Login</th><th class="tr">Conversación</th><th class="tr">Hold</th><th class="tr">Fichas T.O.</th><th class="tr">Días</th><th>Llamadas</th><th>AHT</th></tr></thead>
+      <tbody id="tbS2"></tbody>
+    </table></div>
+  </div>
+</div>
+
+
+<div id="pane-s3" class="pane">
+  <div class="ph-hdr">
+    <div><h2>Semana 3 · <span>18 al 23 de Mayo</span></h2><div class="ph-sub">23 agentes · Lunes a Sábado · Campaña Frávega SAC · Nuevos: Destefano, Gonzalez Laura</div></div>
+    <div class="obj-pill">Obj. llamadas: <strong>≥ 60</strong> &nbsp;|&nbsp; Obj. AHT: <strong>≤ 4'30"</strong></div>
+  </div>
+  <div class="day-sel">
+    <label>Ver:</label>
+    <button class="db active" onclick="swDay3('all',this)">Semana completa</button>
+    <button class="db" onclick="swDay3('2026-05-18',this)">Lun 18/05</button>
+    <button class="db" onclick="swDay3('2026-05-19',this)">Mar 19/05</button>
+    <button class="db" onclick="swDay3('2026-05-20',this)">Mié 20/05</button>
+    <button class="db" onclick="swDay3('2026-05-21',this)">Jue 21/05</button>
+    <button class="db" onclick="swDay3('2026-05-22',this)">Vie 22/05</button>
+    <button class="db" onclick="swDay3('2026-05-23',this)">Sáb 23/05</button>
+  </div>
+  <div class="kpi-grid" id="kpiS3"></div>
+  <div class="card">
+    <div class="ct" id="ctLl3">Llamadas por agente — Semana completa</div>
+    <div style="height:680px"><canvas id="cS3L"></canvas></div>
+  </div>
+  <div class="row2">
+    <div class="card">
+      <div class="ct">AHT por agente</div>
+      <div style="height:680px"><canvas id="cS3A"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct" id="ctDist3">Distribución del tiempo — equipo (semana)</div>
+      <div style="height:580px"><canvas id="cS3T"></canvas></div>
+    </div>
+  </div>
+  <div class="card" id="cS3Fcard">
+    <div class="ct">Fichas time out (sin tipificar) por operador — Semana 3 (acumulado semanal)</div>
+    <div style="height:680px"><canvas id="cS3F"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="ct" id="ctTbl3">Tabla detalle — Semana completa</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Agente</th><th class="tr">Llamadas</th><th class="tr">AHT</th><th class="tr">Login</th><th class="tr">Conversación</th><th class="tr">Hold</th><th class="tr">Sin Tipificar</th><th class="tr">Días</th><th>Llamadas</th><th>AHT</th></tr></thead>
+      <tbody id="tbS3"></tbody>
+    </table></div>
+  </div>
+</div>
+
+
+<div id="pane-s4" class="pane">
+  <div class="ph-hdr">
+    <div><h2>Semana 4 · <span>26 al 30 de Mayo</span></h2><div class="ph-sub">22 agentes · Lunes a Viernes · Campaña Frávega SAC</div></div>
+    <div class="obj-pill">Obj. llamadas: <strong>≥ 60</strong> &nbsp;|&nbsp; Obj. AHT: <strong>≤ 4'30"</strong></div>
+  </div>
+  <div class="day-sel">
+    <label>Ver:</label>
+    <button class="db active" onclick="swDay4('all',this)">Semana completa</button>
+    <button class="db" onclick="swDay4('2026-05-26',this)">Lun 26/05</button>
+    <button class="db" onclick="swDay4('2026-05-27',this)">Mar 27/05</button>
+    <button class="db" onclick="swDay4('2026-05-28',this)">Mié 28/05</button>
+    <button class="db" onclick="swDay4('2026-05-29',this)">Jue 29/05</button>
+    <button class="db" onclick="swDay4('2026-05-30',this)">Vie 30/05</button>
+  </div>
+  <div class="kpi-grid" id="kpiS4"></div>
+  <div class="card">
+    <div class="ct" id="ctLl4">Llamadas por agente — Semana completa</div>
+    <div style="height:660px"><canvas id="cS4L"></canvas></div>
+  </div>
+  <div class="row2">
+    <div class="card">
+      <div class="ct">AHT por agente</div>
+      <div style="height:660px"><canvas id="cS4A"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct" id="ctDist4">Distribución del tiempo — equipo (semana)</div>
+      <div style="height:580px"><canvas id="cS4T"></canvas></div>
+    </div>
+  </div>
+  <div class="card" id="cS4Fcard">
+    <div class="ct">Fichas time out (sin tipificar) por operador — Semana 4 (acumulado semanal)</div>
+    <div style="height:660px"><canvas id="cS4F"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="ct" id="ctTbl4">Tabla detalle — Semana completa</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Agente</th><th class="tr">Llamadas</th><th class="tr">AHT</th><th class="tr">Login</th><th class="tr">Conversación</th><th class="tr">Hold</th><th class="tr">Sin Tipificar</th><th class="tr">Días</th><th>Llamadas</th><th>AHT</th></tr></thead>
+      <tbody id="tbS4"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- AUDITORIAS QA -->
+<div id="pane-qa" class="pane">
+  <div class="ph-hdr">
+    <div><h2>Auditorías <span>QA</span></h2><div class="ph-sub">Evaluación de calidad por operador — Frávega SAC 2026</div></div>
+  </div>
+
+  <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
+    <div class="kpi ac"><div class="kl">Promedio equipo</div><div class="kv">88.50%</div><div class="ks">cierre mensual S1+S2+S3+S4</div></div>
+    <div class="kpi g"><div class="kl">Calificación máx.</div><div class="kv">98.3%</div><div class="ks">Marcos Jorge</div></div>
+    <div class="kpi a"><div class="kl">Mejor categoría</div><div class="kv" style="font-size:15px">Cierre de la llamada</div><div class="ks">24.2 / 25 pts · 96.6%</div></div>
+    <div class="kpi r"><div class="kl">Categoría más débil</div><div class="kv" style="font-size:15px">Gestión del tiempo</div><div class="ks">18.5 / 25 pts · 73.8%</div></div>
+    <div class="kpi"><div class="kl">Operadores evaluados</div><div class="kv">20</div><div class="ks">Semanas 1, 2, 3 y 4 · mayo 2026</div></div>
+  </div>
+
+  <div class="card" style="position:relative">
+    <div class="cal-hdr">
+      <div class="ct" style="margin:0" id="qaOpTitle">Categorizaciones por operador — Todos los meses</div>
+      <div class="cal-drop-wrap">
+        <div class="cal-drop-btn" onclick="toggleQAOpDrop(this)">
+          <span id="qaOpDropLabel">📊 Todos los meses</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="cal-drop-menu" id="qaOpDropMenu">
+          <div class="cal-drop-item active" onclick="selectQAOpMes('todos',this,'Todos los meses')">📊 Todos los meses</div>
+          <div class="cal-drop-item" onclick="selectQAOpMes('mayo2026',this,'Mayo 2026')">📅 Mayo 2026</div>
+          <div class="cal-drop-item" onclick="selectQAOpMes('abril2026',this,'Abril 2026')">📅 Abril 2026</div>
+          <div class="cal-drop-item" onclick="selectQAOpMes('marzo2026',this,'Marzo 2026')">📅 Marzo 2026</div>
+          <div class="cal-drop-item" onclick="selectQAOpMes('febrero2026',this,'Febrero 2026')">📅 Febrero 2026</div>
+        </div>
+      </div>
+    </div>
+    <div style="height:620px"><canvas id="cQAOp"></canvas></div>
+  </div>
+
+  <div class="card" style="position:relative">
+    <div class="cal-hdr">
+      <div class="ct" style="margin:0" id="qaAtribTitle">Atributos de llamada — Todos los meses</div>
+      <div class="cal-drop-wrap">
+        <div class="cal-drop-btn" onclick="toggleQAAtribDrop(this)">
+          <span id="qaAtribDropLabel">📊 Todos los meses</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="cal-drop-menu" id="qaAtribDropMenu">
+          <div class="cal-drop-item active" onclick="selectQAAtribMes('todos',this,'Todos los meses')">📊 Todos los meses</div>
+          <div class="cal-drop-item" onclick="selectQAAtribMes('mayo2026',this,'Mayo 2026')">📅 Mayo 2026</div>
+          <div class="cal-drop-item" onclick="selectQAAtribMes('abril2026',this,'Abril 2026')">📅 Abril 2026</div>
+          <div class="cal-drop-item" onclick="selectQAAtribMes('marzo2026',this,'Marzo 2026')">📅 Marzo 2026</div>
+          <div class="cal-drop-item" onclick="selectQAAtribMes('febrero2026',this,'Febrero 2026')">📅 Febrero 2026</div>
+        </div>
+      </div>
+    </div>
+    <div style="height:320px"><canvas id="cQAAtrib"></canvas></div>
+  </div>
+
+  <div class="card" style="position:relative">
+    <div class="cal-hdr">
+      <div class="ct" style="margin:0" id="qaCatTitle">Categorías — Todos los meses</div>
+      <div class="cal-drop-wrap">
+        <div class="cal-drop-btn" onclick="toggleQACatDrop(this)">
+          <span id="qaCatDropLabel">📊 Todos los meses</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="cal-drop-menu" id="qaCatDropMenu">
+          <div class="cal-drop-item active" onclick="selectQACatMes('todos',this,'Todos los meses')">📊 Todos los meses</div>
+          <div class="cal-drop-item" onclick="selectQACatMes('mayo2026',this,'Mayo 2026')">📅 Mayo 2026</div>
+          <div class="cal-drop-item" onclick="selectQACatMes('abril2026',this,'Abril 2026')">📅 Abril 2026</div>
+          <div class="cal-drop-item" onclick="selectQACatMes('marzo2026',this,'Marzo 2026')">📅 Marzo 2026</div>
+          <div class="cal-drop-item" onclick="selectQACatMes('febrero2026',this,'Febrero 2026')">📅 Febrero 2026</div>
+        </div>
+      </div>
+    </div>
+    <div style="height:240px"><canvas id="cQACat"></canvas></div>
+  </div>
+
+</div>
+
+<div id="pane-criticos" class="pane">
+  <div class="ph-hdr" style="margin-bottom:16px">
+    <div>
+      <h2>⚠️ Operadores <span>Críticos</span></h2>
+      <div class="ph-sub">Análisis combinado de calidad QA + métricas operativas · Se actualiza cada sábado con el reporte semanal</div>
+    </div>
+  </div>
+
+  <div class="crit-update-banner">
+    <div class="bu-left">Última actualización: <strong>Semanas 1, 2, 3 y 4 — Mayo 2026</strong> &nbsp;·&nbsp; Basado en QA CIERRE (prom. S1+S2+S3+S4), derivaciones históricas Feb–May y métricas operativas</div>
+    <div class="bu-date">📅 30 / 05 / 2026</div>
+  </div>
+
+  <p class="crit-section-title">Top 5 · Requieren atención inmediata o seguimiento</p>
+
+  <div class="crit-grid" id="critGrid"></div>
+
+
+<script>
+
+// ══════════════════════════════════════════════════════
+// QA CATEGORIZACIONES — datos y funciones globales
+// ══════════════════════════════════════════════════════
+var QA_MESES={
+  // ── MAYO 2026 — CIERRE promedio S1+S2+S3+S4 ──
+  mayo2026:[
+    {op:'Marcos Jorge',         v:98.3, s1:100.0, s2:100.0, s3:93.4, s4:99.6},
+    {op:'Cinthya Menéndez',     v:97.2, s1:93.6,  s2:100.0, s3:100.0,s4:95.2},
+    {op:'Marcela Huacaña',      v:96.7, s1:100.0, s2:96.0,  s3:100.0,s4:90.6},
+    {op:'Melisa Falcón',        v:96.2, s1:100.0, s2:99.2,  s3:94.4, s4:91.2},
+    {op:'Debora Muñoz',         v:95.9, s1:91.8,  s2:100.0, s3:100.0,s4:91.8},
+    {op:'Cynthia Velazquez',    v:94.7, s1:100.0, s2:100.0, s3:96.0, s4:82.8},
+    {op:'Angelica Ballesteros', v:94.6, s1:88.0,  s2:100.0, s3:100.0,s4:90.2},
+    {op:'Verónica Guiroy',      v:92.2, s1:99.2,  s2:81.8,  s3:94.2, s4:93.6},
+    {op:'Cecilia Antúnez',      v:91.5, s1:77.6,  s2:88.2,  s3:100.0,s4:100.0},
+    {op:'Romina Guglielmi',     v:89.6, s1:98.4,  s2:96.0,  s3:85.0, s4:79.0},
+    {op:'Yanina Coronel',       v:88.8, s1:80.4,  s2:87.4,  s3:87.4, s4:100.0},
+    {op:'Viviana Molina',       v:88.2, s1:74.8,  s2:100.0, s3:89.8, s4:88.0},
+    {op:'Aldana Maidana',       v:87.1, s1:88.2,  s2:74.2,  s3:94.6, s4:91.2},
+    {op:'Mariana Blasco',       v:86.9, s1:92.2,  s2:74.2,  s3:98.4, s4:82.6},
+    {op:'Lucia Jara',           v:86.1, s1:63.8,  s2:100.0, s3:99.2, s4:81.2},
+    {op:'Marina Las Heras',     v:85.0, s1:79.8,  s2:82.2,  s3:100.0,s4:78.0},
+    {op:'Cristian Hernández',   v:84.6, s1:100.0, s2:90.6,  s3:98.0, s4:49.8},
+    {op:'Valeria González',     v:81.7, s1:74.4,  s2:89.0,  s3:91.4, s4:71.8},
+    {op:'Victoria Iturria',     v:74.8, s1:69.8,  s2:81.8,  s3:75.6, s4:71.8},
+    {op:'Angel Alfonso',        v:59.8, s1:49.6,  s2:56.0,  s3:61.6, s4:71.8},
+  ],
+  // ── ABRIL 2026 ──
+  abril2026:[
+    {op:'Marcela Huacaña',      v:99.2},
+    {op:'Debora Muñoz',         v:96.0},
+    {op:'Angelica Ballesteros', v:95.7},
+    {op:'Cecilia Antúnez',      v:94.1},
+    {op:'Cynthia Velazquez',    v:93.6},
+    {op:'Aldana Maidana',       v:92.6},
+    {op:'Melisa Falcón',        v:92.6},
+    {op:'Marcos Jorge',         v:91.1},
+    {op:'Cinthya Menéndez',     v:89.8},
+    {op:'Mariana Blasco',       v:90.3},
+    {op:'Romina Guglielmi',     v:90.3},
+    {op:'Verónica Guiroy',      v:89.3},
+    {op:'Viviana Molina',       v:89.1},
+    {op:'Marina Las Heras',     v:86.5},
+    {op:'Cristian Hernández',   v:82.6},
+    {op:'Victoria Iturria',     v:81.5},
+    {op:'Yanina Coronel',       v:79.8},
+    {op:'Lucia Jara',           v:75.7},
+    {op:'Valeria González',     v:60.1},
+    {op:'Angel Alfonso',        v:47.8},
+  ],
+  // ── MARZO 2026 ──
+  marzo2026:[
+    {op:'Cecilia Antúnez',      v:96.0},
+    {op:'Angelica Ballesteros', v:95.2},
+    {op:'Verónica Guiroy',      v:95.0},
+    {op:'Cynthia Velazquez',    v:94.4},
+    {op:'Marcela Huacaña',      v:93.6},
+    {op:'Debora Muñoz',         v:92.5},
+    {op:'Viviana Molina',       v:92.5},
+    {op:'Aldana Maidana',       v:91.9},
+    {op:'Romina Guglielmi',     v:90.9},
+    {op:'Melisa Falcón',        v:87.9},
+    {op:'Lucia Jara',           v:87.0},
+    {op:'Cinthya Menéndez',     v:86.7},
+    {op:'Mariana Blasco',       v:86.8},
+    {op:'Cristian Hernández',   v:86.4},
+    {op:'Marcos Jorge',         v:81.5},
+    {op:'Marina Las Heras',     v:78.6},
+    {op:'Valeria González',     v:76.3},
+    {op:'Victoria Iturria',     v:73.8},
+    {op:'Angel Alfonso',        v:70.7},
+  ],
+  // ── FEBRERO 2026 ──
+  febrero2026:[
+    {op:'Yanina Coronel',       v:99.4},
+    {op:'Marcela Huacaña',      v:97.6},
+    {op:'Debora Muñoz',         v:96.6},
+    {op:'Angelica Ballesteros', v:95.3},
+    {op:'Cecilia Antúnez',      v:95.3},
+    {op:'Melisa Falcón',        v:95.3},
+    {op:'Cristian Hernández',   v:95.2},
+    {op:'Mariana Blasco',       v:94.0},
+    {op:'Romina Guglielmi',     v:91.1},
+    {op:'Cynthia Velazquez',    v:89.0},
+    {op:'Aldana Maidana',       v:85.7},
+    {op:'Marina Las Heras',     v:87.1},
+    {op:'Verónica Guiroy',      v:85.9},
+    {op:'Cinthya Menéndez',     v:84.5},
+    {op:'Viviana Molina',       v:83.4},
+    {op:'Marcos Jorge',         v:82.5},
+    {op:'Victoria Iturria',     v:76.2},
+    {op:'Lucia Jara',           v:73.5},
+    {op:'Valeria González',     v:70.3},
+    {op:'Angel Alfonso',        v:63.3},
+  ],
+};
+var QA_PROMEDIOS={
+  todos:      ['87.45%','promedio feb–may 2026'],
+  mayo2026:   ['88.50%','cierre mensual S1+S2+S3+S4'],
+  abril2026:  ['85.89%','promedio mensual'],
+  marzo2026:  ['86.99%','promedio mensual'],
+  febrero2026:['87.04%','promedio mensual'],
+};
+var qaOpMesActual='todos';
+
+function toggleQAOpDrop(btn){
+  event.stopPropagation();
+  btn.classList.toggle('open');
+  document.getElementById('qaOpDropMenu').classList.toggle('open');
+}
+function selectQAOpMes(mesKey,item,label){
+  qaOpMesActual=mesKey;
+  document.getElementById('qaOpDropLabel').textContent=(mesKey==='todos'?'📊':'📅 ')+label;
+  document.querySelectorAll('#qaOpDropMenu .cal-drop-item').forEach(function(i){i.classList.remove('active');});
+  item.classList.add('active');
+  document.querySelector('.cal-drop-btn[onclick*="toggleQAOpDrop"]').classList.remove('open');
+  document.getElementById('qaOpDropMenu').classList.remove('open');
+  var t=document.getElementById('qaOpTitle');
+  if(t) t.textContent='Categorizaciones por operador — '+label;
+  var pData=QA_PROMEDIOS[mesKey];
+  if(pData){
+    var kvEl=document.querySelector('#pane-qa .kpi.ac .kv');
+    var ksEl=document.querySelector('#pane-qa .kpi.ac .ks');
+    if(kvEl) kvEl.textContent=pData[0];
+    if(ksEl) ksEl.textContent=pData[1];
+  }
+  buildQAOp();
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('[onclick*="toggleQAOpDrop"]')&&!e.target.closest('#qaOpDropMenu')){
+    var btn=document.querySelector('[onclick*="toggleQAOpDrop"]');
+    var menu=document.getElementById('qaOpDropMenu');
+    if(btn) btn.classList.remove('open');
+    if(menu) menu.classList.remove('open');
+  }
+});
+
+function buildQAOp(){
+  var PURPLES=['#3B0764','#4C1D95','#5B21B6','#6D28D9','#7C3AED','#8B5CF6','#A78BFA','#C4B5FD','#DDD6FE'];
+  function pByRankG(i,n){return PURPLES[Math.min(Math.floor(i/(n-1)*(PURPLES.length-1)),PURPLES.length-1)];}
+
+  var OPS;
+  if(qaOpMesActual==='todos'){
+    // Average all months per operator
+    var allMeses=['febrero2026','marzo2026','abril2026','mayo2026'];
+    var opMap={};
+    allMeses.forEach(function(m){
+      (QA_MESES[m]||[]).forEach(function(r){
+        if(!opMap[r.op]) opMap[r.op]={op:r.op,vals:[],meses:[]};
+        opMap[r.op].vals.push(r.v);
+        opMap[r.op].meses.push(m);
+      });
+    });
+    OPS=Object.values(opMap).map(function(r){
+      var avg=Math.round(r.vals.reduce(function(s,v){return s+v;},0)/r.vals.length*10)/10;
+      return {op:r.op,v:avg,detalle:r.meses.map(function(m,i){
+        var label={'febrero2026':'Feb','marzo2026':'Mar','abril2026':'Abr','mayo2026':'Mayo'}[m];
+        return label+': '+r.vals[i]+'%';
+      })};
+    }).sort(function(a,b){return b.v-a.v;});
+  } else {
+    OPS=(QA_MESES[qaOpMesActual]||[]).slice().sort(function(a,b){return b.v-a.v;});
+  }
+  if(!OPS.length) return;
+  if(chts['cQAOp'])chts['cQAOp'].destroy();
+  chts['cQAOp']=new Chart(document.getElementById('cQAOp'),{type:'bar',
+    data:{labels:OPS.map(function(r){return r.op;}),
+      datasets:[{label:'Score %',data:OPS.map(function(r){return r.v;}),
+        backgroundColor:OPS.map(function(r,i){return pByRankG(i,OPS.length);}),
+        barThickness:22,borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      animation:{duration:400},
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:function(ctx){
+          var r=OPS[ctx.dataIndex];
+          if(r.detalle) return [' Promedio: '+r.v+'%'].concat(r.detalle.map(function(d){return ' '+d;}));
+          var lines=[' Score: '+r.v+'%'];
+          if(r.s1!==undefined) lines.push(' S1: '+r.s1+'% | S2: '+r.s2+'%'+(r.s3!==undefined?' | S3: '+r.s3+'%':''));
+          return lines;
+        }}}},
+      scales:{
+        x:{min:0,max:100,grid:{color:'rgba(0,0,0,.05)'},
+          ticks:{font:{size:10},callback:function(v){return v+'%';}}},
+        y:{grid:{display:false},ticks:{font:{size:11}}}},
+      animation:{duration:400,onComplete:function(){
+        var chart=this,ctx=chart.ctx,ds=chart.data.datasets[0];
+        var meta=chart.getDatasetMeta(0);
+        ctx.save();ctx.font='bold 11px Barlow,sans-serif';ctx.textBaseline='middle';
+        meta.data.forEach(function(bar,i){
+          var v=ds.data[i];
+          var x=bar.x,y=bar.y,barW=x-chart.scales.x.getPixelForValue(0);
+          if(barW>38){ctx.fillStyle='#fff';ctx.textAlign='right';ctx.fillText(v+'%',x-6,y);}
+          else{ctx.fillStyle='#5B21B6';ctx.textAlign='left';ctx.fillText(v+'%',x+4,y);}
+        });
+        ctx.restore();
+      }}}});
+}
+
+
+// ══════════════════════════════════════════════════════
+// QA ATRIBUTOS — datos y funciones globales
+// ══════════════════════════════════════════════════════
+// Atributos base (nombre + peso — constantes para todos los meses)
+var ATRIB_BASE=[
+  {a:'Saludo bienvenida',    peso:'5%'},
+  {a:'Cierre y saludo final',peso:'5%'},
+  {a:'Validación de datos',  peso:'10%'},
+  {a:'Tono de voz',          peso:'10%'},
+  {a:'Escucha requerimiento',peso:'5%'},
+  {a:'Indagación cliente',   peso:'10%'},
+  {a:'Predisposición',       peso:'5%'},
+  {a:'Procedimiento',        peso:'5%'},
+  {a:'Derivación',           peso:'2%'},
+  {a:'Interrupción cliente', peso:'10%'},
+  {a:'Lenguaje adecuado',    peso:'10%'},
+  {a:'Capacidad resolución', peso:'10%'},
+  {a:'Contención en línea',  peso:'5%'},
+  {a:'Duración llamada',     peso:'2%'},
+  {a:'Uso del mute',         peso:'2%'},
+  {a:'Uso del hold',         peso:'2%'},
+  {a:'Tiempos muertos',      peso:'2%'},
+];
+
+// Solo los valores de cumplimiento cambian por mes
+// Orden: mismo que ATRIB_BASE
+var ATRIB_MESES={
+  // ── MAYO 2026 ──
+  mayo2026:[97.5,95.0,96.5,90.0,91.0,89.8,90.0,88.8,88.3,87.3,84.8,85.8,84.5,74.8,77.3,73.3,73.0],
+  // ── ABRIL 2026 ──
+  abril2026:  [90, 85, 89, 81, 83, 82, 81, 76, 76, 80, 77, 75, 76, 56, 83, 62, 63],
+  // ── MARZO 2026 ──
+  marzo2026:   [90, 87, 87, 81, 81, 82, 83, 77, 77, 79, 74, 76, 77, 63, 79, 59, 58],
+  // ── FEBRERO 2026 ──
+  febrero2026: [89, 82, 85, 80, 83, 82, 78, 76, 76, 77, 73, 75, 73, 57, 82, 64, 66],
+};
+
+var qaAtribMesActual='todos';
+
+function toggleQAAtribDrop(btn){
+  event.stopPropagation();
+  btn.classList.toggle('open');
+  document.getElementById('qaAtribDropMenu').classList.toggle('open');
+}
+function selectQAAtribMes(mesKey,item,label){
+  qaAtribMesActual=mesKey;
+  document.getElementById('qaAtribDropLabel').textContent=(mesKey==='todos'?'📊':'📅 ')+label;
+  document.querySelectorAll('#qaAtribDropMenu .cal-drop-item').forEach(function(i){i.classList.remove('active');});
+  item.classList.add('active');
+  document.querySelector('[onclick*="toggleQAAtribDrop"]').classList.remove('open');
+  document.getElementById('qaAtribDropMenu').classList.remove('open');
+  var t=document.getElementById('qaAtribTitle');
+  if(t) t.textContent='Atributos de llamada — '+label;
+  buildQAAtrib();
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('[onclick*="toggleQAAtribDrop"]')&&!e.target.closest('#qaAtribDropMenu')){
+    var btn=document.querySelector('[onclick*="toggleQAAtribDrop"]');
+    var menu=document.getElementById('qaAtribDropMenu');
+    if(btn) btn.classList.remove('open');
+    if(menu) menu.classList.remove('open');
+  }
+});
+
+function buildQAAtrib(){
+  var PURPLES=['#3B0764','#4C1D95','#5B21B6','#6D28D9','#7C3AED','#8B5CF6','#A78BFA','#C4B5FD','#DDD6FE'];
+  function pByRankA(i,n){return PURPLES[Math.min(Math.floor(i/(n-1)*(PURPLES.length-1)),PURPLES.length-1)];}
+
+  // Build ATRIB array with cumplimiento values
+  var cumVals;
+  if(qaAtribMesActual==='todos'){
+    // Average all available months per attribute
+    var mesesDisp=Object.keys(ATRIB_MESES);
+    cumVals=ATRIB_BASE.map(function(_,i){
+      var vals=mesesDisp.map(function(m){return ATRIB_MESES[m][i];}).filter(function(v){return v!==undefined;});
+      if(!vals.length) return 0;
+      return Math.round(vals.reduce(function(s,v){return s+v;},0)/vals.length*10)/10;
+    });
+  } else {
+    cumVals=(ATRIB_MESES[qaAtribMesActual]||ATRIB_MESES['mayo2026']).slice();
+  }
+
+  // Merge base + values, sort highest to lowest
+  var ATRIB=ATRIB_BASE.map(function(r,i){return {a:r.a,cum:cumVals[i],peso:r.peso};})
+    .sort(function(a,b){return b.cum-a.cum;});
+
+  if(chts['cQAAtrib'])chts['cQAAtrib'].destroy();
+  chts['cQAAtrib']=new Chart(document.getElementById('cQAAtrib'),{type:'bar',
+    data:{labels:ATRIB.map(function(r){return r.a;}),
+      datasets:[{label:'% Cumplimiento',data:ATRIB.map(function(r){return r.cum;}),
+        backgroundColor:ATRIB.map(function(r,i){return pByRankA(i,ATRIB.length);}),
+        barThickness:30,borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      animation:{duration:400},
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:function(ctx){
+          var r=ATRIB[ctx.dataIndex];
+          var lines=[' Cumplimiento: '+r.cum+'%',' Peso en score: '+r.peso];
+          if(qaAtribMesActual==='todos'){
+            var mesesDisp=Object.keys(ATRIB_MESES);
+            var baseIdx=ATRIB_BASE.findIndex(function(b){return b.a===r.a;});
+            mesesDisp.forEach(function(m){
+              var label={'febrero2026':'Feb','marzo2026':'Mar','abril2026':'Abr','mayo2026':'Mayo'}[m]||m;
+              lines.push(' '+label+': '+ATRIB_MESES[m][baseIdx]+'%');
+            });
+          }
+          return lines;
+        }}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:10},maxRotation:40,minRotation:30}},
+        y:{min:0,max:100,grid:{color:'rgba(0,0,0,.05)'},
+          ticks:{font:{size:10},callback:function(v){return v+'%';}},
+          title:{display:true,text:'% Cumplimiento',font:{size:10},color:'#6B7280'}}},
+      animation:{duration:400,onComplete:function(){
+        var chart=this,ctx=chart.ctx,ds=chart.data.datasets[0];
+        var meta=chart.getDatasetMeta(0);
+        ctx.save();ctx.font='bold 9px Barlow,sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
+        meta.data.forEach(function(bar,i){
+          var v=ds.data[i];
+          var barH=chart.scales.y.getPixelForValue(0)-bar.y;
+          if(barH>16){ctx.fillStyle='#fff';ctx.fillText(v+'%',bar.x,bar.y+14);}
+          else{ctx.fillStyle='#5B21B6';ctx.fillText(v+'%',bar.x,bar.y-3);}
+        });
+        ctx.restore();
+      }}}});
+}
+
+
+// ══════════════════════════════════════════════════════
+// QA CATEGORÍAS — datos y funciones globales
+// ══════════════════════════════════════════════════════
+// Categorías base (5, constantes)
+var CATS_BASE=[
+  'Cierre de la llamada',
+  'Inicio de la Llamada',
+  'Habilidades de comunicación',
+  'Resolución y procedimientos',
+  'Gestión del tiempo',
+];
+
+// Valores de cumplimiento % por mes — mismo orden que CATS_BASE
+var CATS_MESES={
+  // ── MAYO 2026 ──
+  mayo2026:[95.0,97.0,88.2,87.6,74.6],
+  // ── ABRIL 2026 ──
+  abril2026:  [85, 89, 80, 76, 66],
+  // ── MARZO 2026 ──
+  marzo2026:   [87, 89, 79, 77, 65],
+  // ── FEBRERO 2026 ──
+  febrero2026: [82, 87, 78, 76, 67],
+};
+
+var qaCatMesActual='todos';
+
+function toggleQACatDrop(btn){
+  event.stopPropagation();
+  btn.classList.toggle('open');
+  document.getElementById('qaCatDropMenu').classList.toggle('open');
+}
+function selectQACatMes(mesKey,item,label){
+  qaCatMesActual=mesKey;
+  document.getElementById('qaCatDropLabel').textContent=(mesKey==='todos'?'📊':'📅 ')+label;
+  document.querySelectorAll('#qaCatDropMenu .cal-drop-item').forEach(function(i){i.classList.remove('active');});
+  item.classList.add('active');
+  document.querySelector('[onclick*="toggleQACatDrop"]').classList.remove('open');
+  document.getElementById('qaCatDropMenu').classList.remove('open');
+  var t=document.getElementById('qaCatTitle');
+  if(t) t.textContent='Categorías — '+label;
+  buildQACat();
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('[onclick*="toggleQACatDrop"]')&&!e.target.closest('#qaCatDropMenu')){
+    var btn=document.querySelector('[onclick*="toggleQACatDrop"]');
+    var menu=document.getElementById('qaCatDropMenu');
+    if(btn) btn.classList.remove('open');
+    if(menu) menu.classList.remove('open');
+  }
+});
+
+function buildQACat(){
+  var PURPLES=['#3B0764','#4C1D95','#5B21B6','#6D28D9','#7C3AED','#8B5CF6','#A78BFA','#C4B5FD','#DDD6FE'];
+  function pByRankC(i,n){return PURPLES[Math.min(Math.floor(i/(n-1)*(PURPLES.length-1)),PURPLES.length-1)];}
+
+  var vals;
+  if(qaCatMesActual==='todos'){
+    var mesesDisp=Object.keys(CATS_MESES);
+    vals=CATS_BASE.map(function(_,i){
+      var vs=mesesDisp.map(function(m){return CATS_MESES[m][i];}).filter(function(v){return v!==undefined;});
+      if(!vs.length) return 0;
+      return Math.round(vs.reduce(function(s,v){return s+v;},0)/vs.length*10)/10;
+    });
+  } else {
+    vals=(CATS_MESES[qaCatMesActual]||CATS_MESES['mayo2026']).slice();
+  }
+
+  // Sort by value descending
+  var CATS=CATS_BASE.map(function(c,i){return {c:c,v:vals[i]};})
+    .sort(function(a,b){return b.v-a.v;});
+
+  if(chts['cQACat'])chts['cQACat'].destroy();
+  chts['cQACat']=new Chart(document.getElementById('cQACat'),{type:'bar',
+    data:{labels:CATS.map(function(r){return r.c;}),
+      datasets:[{label:'% Cumplimiento',data:CATS.map(function(r){return r.v;}),
+        backgroundColor:CATS.map(function(r,i){return pByRankC(i,CATS.length);}),
+        barThickness:36,borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      animation:{duration:400},
+      plugins:{legend:{display:false},
+        annotation:{annotations:{}},
+        tooltip:{callbacks:{label:function(ctx){
+          var r=CATS[ctx.dataIndex];
+          var lines=[' Cumplimiento: '+r.v+'%'];
+          if(qaCatMesActual==='todos'){
+            var mesesDisp=Object.keys(CATS_MESES);
+            var baseIdx=CATS_BASE.indexOf(r.c);
+            mesesDisp.forEach(function(m){
+              var lbl={'febrero2026':'Feb','marzo2026':'Mar','abril2026':'Abr','mayo2026':'Mayo'}[m]||m;
+              lines.push(' '+lbl+': '+CATS_MESES[m][baseIdx]+'%');
+            });
+          }
+          return lines;
+        }}}},
+      scales:{
+        x:{min:0,max:100,grid:{color:'rgba(0,0,0,.05)'},
+          ticks:{font:{size:10},callback:function(v){return v+'%';}}},
+        y:{grid:{display:false},ticks:{font:{size:12}}}},
+      animation:{duration:400,onComplete:function(){
+        var chart=this,ctx=chart.ctx,ds=chart.data.datasets[0];
+        var meta=chart.getDatasetMeta(0);
+        ctx.save();ctx.font='bold 13px Barlow,sans-serif';ctx.textBaseline='middle';
+        meta.data.forEach(function(bar,i){
+          var v=ds.data[i],x=bar.x,y=bar.y;
+          var barW=x-chart.scales.x.getPixelForValue(0);
+          if(barW>50){ctx.fillStyle='#fff';ctx.textAlign='right';ctx.fillText(v+'%',x-10,y);}
+          else{ctx.fillStyle='#5B21B6';ctx.textAlign='left';ctx.fillText(v+'%',x+6,y);}
+        });
+        ctx.restore();
+      }}}});
+}
+
+var qaBuilt=false;
+function buildQA(){
+  // Degradé violeta 9 pasos: más oscuro (#3B0764) al más claro (#DDD6FE)
+  var PURPLES=['#3B0764','#4C1D95','#5B21B6','#6D28D9','#7C3AED','#8B5CF6','#A78BFA','#C4B5FD','#DDD6FE'];
+  function pByRank(i,n){return PURPLES[Math.min(Math.floor(i/(n-1)*(PURPLES.length-1)),PURPLES.length-1)];}
+
+  // ── 1. CATEGORIZACIONES POR OPERADOR ── (función global buildQAOp)
+  buildQAOp();
+
+  // ── 2. ATRIBUTOS ── (función global buildQAAtrib)
+  buildQAAtrib();
+
+  // ── 3. CATEGORÍAS ── (función global buildQACat)
+  buildQACat();
+}
+</script>
+
+
+<script>
+// ===== SEMANA 2 DATA =====
+var DIAS2=[
+  {dia:'Lun 11/05',f:'2026-05-11',ag:20,ll:1283,aht:238,lm:413.7},
+  {dia:'Mar 12/05',f:'2026-05-12',ag:19,ll:1195,aht:249,lm:416.3},
+  {dia:'Mié 13/05',f:'2026-05-13',ag:20,ll:1196,aht:262,lm:414.5},
+  {dia:'Jue 14/05',f:'2026-05-14',ag:20,ll:1147,aht:261,lm:400.2},
+  {dia:'Vie 15/05',f:'2026-05-15',ag:20,ll:1113,aht:276,lm:401.8},
+  {dia:'Sáb 16/05',f:'2026-05-16',ag:8, ll:260, aht:282,lm:230.9},
+];
+var AG2=[
+  {ag:'Menendez, Cinthya',                   ll:547,aht:163,login:2452,conv:1492,aux:75, sup:10, bo:39, des:238,hold:5, fichas:41, dias:6,noData:false},
+  {ag:'Guiroy, Veronica Pamela',              ll:517,aht:244,login:2710,conv:2049,aux:36, sup:25, bo:77, des:147,hold:4, fichas:5,  dias:6,noData:false},
+  {ag:'Guglielmi, Romina',                   ll:392,aht:266,login:2444,conv:1733,aux:135,sup:5,  bo:100,des:194,hold:7, fichas:27, dias:6,noData:false},
+  {ag:'Maidana, Aldana Yamila',              ll:376,aht:200,login:1906,conv:1253,aux:41, sup:0,  bo:112,des:150,hold:1, fichas:5,  dias:5,noData:false},
+  {ag:'Molina, Viviana',                     ll:358,aht:263,login:2403,conv:1552,aux:110,sup:42, bo:143,des:229,hold:8, fichas:15, dias:5,noData:false},
+  {ag:'Huacaña Sanchez, Marcela',            ll:353,aht:265,login:2416,conv:1552,aux:97, sup:79, bo:114,des:231,hold:7, fichas:1,  dias:5,noData:false},
+  {ag:'Velazquez, Cynthia',                  ll:349,aht:279,login:2400,conv:1620,aux:124,sup:0,  bo:202,des:156,hold:11,fichas:23, dias:5,noData:false},
+  {ag:'Munos, Debora',                       ll:331,aht:230,login:2390,conv:1262,aux:56, sup:10, bo:185,des:233,hold:7, fichas:1,  dias:5,noData:false},
+  {ag:'Hernandez, Cristian',                 ll:324,aht:243,login:1810,conv:1314,aux:25, sup:0,  bo:85, des:155,hold:8, fichas:13, dias:5,noData:false},
+  {ag:'Jorge, Marcos Santiago',              ll:288,aht:260,login:2038,conv:1251,aux:185,sup:19, bo:188,des:160,hold:6, fichas:4,  dias:6,noData:false},
+  {ag:'Blasco, Mariana Lorena',             ll:287,aht:273,login:1896,conv:1294,aux:69, sup:12, bo:139,des:119,hold:9, fichas:48, dias:6,noData:false},
+  {ag:'Valeria Silvana, Gonzalez',           ll:282,aht:223,login:1820,conv:1041,aux:61, sup:152,bo:189,des:149,hold:6, fichas:59, dias:5,noData:false},
+  {ag:'Arellano, Sonia',                     ll:277,aht:422,login:2351,conv:1889,aux:35, sup:21, bo:97, des:149,hold:11,fichas:11, dias:5,noData:false},
+  {ag:'Antunez, Cecilia',                    ll:270,aht:290,login:1874,conv:1304,aux:56, sup:0,  bo:116,des:152,hold:6, fichas:5,  dias:5,noData:false},
+  {ag:'Las Heras, Marina',                   ll:261,aht:358,login:2047,conv:1499,aux:35, sup:2,  bo:116,des:147,hold:9, fichas:6,  dias:6,noData:false},
+  {ag:'Alfonso, Angel Agustin',              ll:246,aht:233,login:2056,conv:913, aux:132,sup:470,bo:147,des:177,hold:6, fichas:129,dias:6,noData:false},
+  {ag:'Jara, Lucia Soledad',                 ll:232,aht:284,login:1820,conv:1098,aux:138,sup:0,  bo:168,des:158,hold:6, fichas:14, dias:5,noData:false},
+  {ag:'Falcon, Macancela Melissa Esther',    ll:210,aht:220,login:1460,conv:935, aux:66, sup:68, bo:93, des:119,hold:7, fichas:2,  dias:5,noData:false},
+  {ag:'Jimenez Ballesteros, Maria Angelica', ll:170,aht:287,login:1668,conv:804, aux:102,sup:77, bo:119,des:134,hold:9, fichas:7,  dias:5,noData:false},
+  {ag:'Coronel, Yanina Mariana',             ll:124,aht:187,login:2398,conv:377, aux:62, sup:18, bo:47, des:214,hold:11,fichas:10, dias:5,noData:false},
+];
+var DAILY2=[
+  {ag:'Guiroy, Veronica Pamela',             f:'2026-05-11',ll:104,aht:201,login:479.4},
+  {ag:'Menendez, Cinthya',                   f:'2026-05-11',ll:98, aht:160,login:446.7},
+  {ag:'Molina, Viviana',                     f:'2026-05-11',ll:91, aht:209,login:479.9},
+  {ag:'Guglielmi, Romina',                   f:'2026-05-11',ll:79, aht:240,login:450.9},
+  {ag:'Huacaña Sanchez, Marcela',            f:'2026-05-11',ll:73, aht:249,login:482.3},
+  {ag:'Maidana, Aldana Yamila',              f:'2026-05-11',ll:71, aht:206,login:357.5},
+  {ag:'Munos, Debora',                       f:'2026-05-11',ll:71, aht:187,login:472.3},
+  {ag:'Velazquez, Cynthia',                  f:'2026-05-11',ll:70, aht:263,login:477.3},
+  {ag:'Arellano, Sonia',                     f:'2026-05-11',ll:66, aht:356,login:526.0},
+  {ag:'Hernandez, Cristian',                 f:'2026-05-11',ll:63, aht:251,login:370.1},
+  {ag:'Alfonso, Angel Agustin',              f:'2026-05-11',ll:60, aht:187,login:394.9},
+  {ag:'Valeria Silvana, Gonzalez',           f:'2026-05-11',ll:59, aht:200,login:362.5},
+  {ag:'Las Heras, Marina',                   f:'2026-05-11',ll:57, aht:263,login:362.6},
+  {ag:'Blasco, Mariana Lorena',             f:'2026-05-11',ll:53, aht:241,login:329.6},
+  {ag:'Antunez, Cecilia',                    f:'2026-05-11',ll:53, aht:277,login:366.4},
+  {ag:'Falcon, Macancela Melissa Esther',    f:'2026-05-11',ll:51, aht:278,login:360.3},
+  {ag:'Jorge, Marcos Santiago',              f:'2026-05-11',ll:49, aht:272,login:359.3},
+  {ag:'Jimenez Ballesteros, Maria Angelica', f:'2026-05-11',ll:45, aht:227,login:358.6},
+  {ag:'Jara, Lucia Soledad',                 f:'2026-05-11',ll:43, aht:313,login:356.1},
+  {ag:'Coronel, Yanina Mariana',             f:'2026-05-11',ll:27, aht:189,login:480.8},
+  {ag:'Menendez, Cinthya',                   f:'2026-05-12',ll:105,aht:151,login:443.7},
+  {ag:'Guiroy, Veronica Pamela',             f:'2026-05-12',ll:92, aht:244,login:488.4},
+  {ag:'Maidana, Aldana Yamila',              f:'2026-05-12',ll:82, aht:166,login:359.1},
+  {ag:'Arellano, Sonia',                     f:'2026-05-12',ll:77, aht:339,login:543.5},
+  {ag:'Huacaña Sanchez, Marcela',            f:'2026-05-12',ll:73, aht:245,login:479.7},
+  {ag:'Guglielmi, Romina',                   f:'2026-05-12',ll:70, aht:289,login:454.3},
+  {ag:'Velazquez, Cynthia',                  f:'2026-05-12',ll:69, aht:277,login:481.2},
+  {ag:'Molina, Viviana',                     f:'2026-05-12',ll:65, aht:278,login:482.9},
+  {ag:'Hernandez, Cristian',                 f:'2026-05-12',ll:62, aht:261,login:359.7},
+  {ag:'Valeria Silvana, Gonzalez',           f:'2026-05-12',ll:61, aht:201,login:369.3},
+  {ag:'Jorge, Marcos Santiago',              f:'2026-05-12',ll:58, aht:240,login:359.6},
+  {ag:'Antunez, Cecilia',                    f:'2026-05-12',ll:57, aht:250,login:364.8},
+  {ag:'Munos, Debora',                       f:'2026-05-12',ll:56, aht:262,login:479.7},
+  {ag:'Blasco, Mariana Lorena',             f:'2026-05-12',ll:52, aht:267,login:329.4},
+  {ag:'Falcon, Macancela Melissa Esther',    f:'2026-05-12',ll:50, aht:287,login:360.2},
+  {ag:'Alfonso, Angel Agustin',              f:'2026-05-12',ll:50, aht:195,login:356.1},
+  {ag:'Jara, Lucia Soledad',                 f:'2026-05-12',ll:50, aht:258,login:354.6},
+  {ag:'Las Heras, Marina',                   f:'2026-05-12',ll:44, aht:349,login:359.8},
+  {ag:'Coronel, Yanina Mariana',             f:'2026-05-12',ll:22, aht:172,login:484.8},
+  {ag:'Menendez, Cinthya',                   f:'2026-05-13',ll:101,aht:173,login:446.3},
+  {ag:'Guiroy, Veronica Pamela',             f:'2026-05-13',ll:79, aht:273,login:481.4},
+  {ag:'Huacaña Sanchez, Marcela',            f:'2026-05-13',ll:77, aht:251,login:480.6},
+  {ag:'Velazquez, Cynthia',                  f:'2026-05-13',ll:75, aht:259,login:481.8},
+  {ag:'Guglielmi, Romina',                   f:'2026-05-13',ll:75, aht:247,login:450.9},
+  {ag:'Hernandez, Cristian',                 f:'2026-05-13',ll:71, aht:223,login:361.2},
+  {ag:'Munos, Debora',                       f:'2026-05-13',ll:69, aht:230,login:481.1},
+  {ag:'Molina, Viviana',                     f:'2026-05-13',ll:69, aht:255,login:482.0},
+  {ag:'Maidana, Aldana Yamila',              f:'2026-05-13',ll:68, aht:200,login:356.9},
+  {ag:'Arellano, Sonia',                     f:'2026-05-13',ll:57, aht:490,login:558.7},
+  {ag:'Falcon, Macancela Melissa Esther',    f:'2026-05-13',ll:55, aht:231,login:361.9},
+  {ag:'Antunez, Cecilia',                    f:'2026-05-13',ll:54, aht:289,login:360.4},
+  {ag:'Jorge, Marcos Santiago',              f:'2026-05-13',ll:53, aht:271,login:359.7},
+  {ag:'Valeria Silvana, Gonzalez',           f:'2026-05-13',ll:52, aht:250,login:365.0},
+  {ag:'Las Heras, Marina',                   f:'2026-05-13',ll:46, aht:350,login:366.0},
+  {ag:'Jara, Lucia Soledad',                 f:'2026-05-13',ll:45, aht:270,login:369.8},
+  {ag:'Alfonso, Angel Agustin',              f:'2026-05-13',ll:44, aht:216,login:360.0},
+  {ag:'Blasco, Mariana Lorena',             f:'2026-05-13',ll:40, aht:325,login:329.8},
+  {ag:'Coronel, Yanina Mariana',             f:'2026-05-13',ll:33, aht:142,login:477.9},
+  {ag:'Jimenez Ballesteros, Maria Angelica', f:'2026-05-13',ll:33, aht:303,login:358.5},
+  {ag:'Guiroy, Veronica Pamela',             f:'2026-05-14',ll:110,aht:221,login:540.0},
+  {ag:'Menendez, Cinthya',                   f:'2026-05-14',ll:105,aht:159,login:445.9},
+  {ag:'Maidana, Aldana Yamila',              f:'2026-05-14',ll:91, aht:211,login:476.8},
+  {ag:'Guglielmi, Romina',                   f:'2026-05-14',ll:76, aht:244,login:452.1},
+  {ag:'Velazquez, Cynthia',                  f:'2026-05-14',ll:68, aht:292,login:478.0},
+  {ag:'Munos, Debora',                       f:'2026-05-14',ll:68, aht:230,login:479.5},
+  {ag:'Molina, Viviana',                     f:'2026-05-14',ll:66, aht:283,login:482.4},
+  {ag:'Hernandez, Cristian',                 f:'2026-05-14',ll:66, aht:239,login:359.7},
+  {ag:'Huacaña Sanchez, Marcela',            f:'2026-05-14',ll:62, aht:306,login:490.3},
+  {ag:'Valeria Silvana, Gonzalez',           f:'2026-05-14',ll:59, aht:211,login:363.8},
+  {ag:'Antunez, Cecilia',                    f:'2026-05-14',ll:58, aht:304,login:421.7},
+  {ag:'Jara, Lucia Soledad',                 f:'2026-05-14',ll:57, aht:291,login:421.5},
+  {ag:'Blasco, Mariana Lorena',             f:'2026-05-14',ll:52, aht:265,login:331.7},
+  {ag:'Jorge, Marcos Santiago',              f:'2026-05-14',ll:42, aht:279,login:360.1},
+  {ag:'Arellano, Sonia',                     f:'2026-05-14',ll:40, aht:452,login:359.8},
+  {ag:'Las Heras, Marina',                   f:'2026-05-14',ll:40, aht:392,login:358.6},
+  {ag:'Jimenez Ballesteros, Maria Angelica', f:'2026-05-14',ll:34, aht:316,login:357.6},
+  {ag:'Alfonso, Angel Agustin',              f:'2026-05-14',ll:33, aht:261,login:330.2},
+  {ag:'Coronel, Yanina Mariana',             f:'2026-05-14',ll:19, aht:245,login:474.6},
+  {ag:'Falcon, Macancela Melissa Esther',    f:'2026-05-14',ll:1,  aht:26, login:20.1},
+  {ag:'Menendez, Cinthya',                   f:'2026-05-15',ll:91, aht:174,login:441.8},
+  {ag:'Guiroy, Veronica Pamela',             f:'2026-05-15',ll:88, aht:238,login:480.4},
+  {ag:'Huacaña Sanchez, Marcela',            f:'2026-05-15',ll:68, aht:274,login:483.1},
+  {ag:'Velazquez, Cynthia',                  f:'2026-05-15',ll:67, aht:303,login:482.3},
+  {ag:'Munos, Debora',                       f:'2026-05-15',ll:67, aht:240,login:477.9},
+  {ag:'Molina, Viviana',                     f:'2026-05-15',ll:67, aht:292,login:475.9},
+  {ag:'Maidana, Aldana Yamila',              f:'2026-05-15',ll:64, aht:217,login:356.1},
+  {ag:'Guglielmi, Romina',                   f:'2026-05-15',ll:63, aht:318,login:453.5},
+  {ag:'Hernandez, Cristian',                 f:'2026-05-15',ll:62, aht:243,login:359.4},
+  {ag:'Blasco, Mariana Lorena',             f:'2026-05-15',ll:54, aht:261,login:335.4},
+  {ag:'Falcon, Macancela Melissa Esther',    f:'2026-05-15',ll:53, aht:277,login:357.2},
+  {ag:'Valeria Silvana, Gonzalez',           f:'2026-05-15',ll:51, aht:251,login:359.4},
+  {ag:'Las Heras, Marina',                   f:'2026-05-15',ll:49, aht:332,login:360.3},
+  {ag:'Jorge, Marcos Santiago',              f:'2026-05-15',ll:48, aht:264,login:359.6},
+  {ag:'Antunez, Cecilia',                    f:'2026-05-15',ll:48, aht:332,login:360.9},
+  {ag:'Alfonso, Angel Agustin',              f:'2026-05-15',ll:39, aht:248,login:377.1},
+  {ag:'Arellano, Sonia',                     f:'2026-05-15',ll:37, aht:475,login:362.8},
+  {ag:'Jimenez Ballesteros, Maria Angelica', f:'2026-05-15',ll:37, aht:305,login:354.9},
+  {ag:'Jara, Lucia Soledad',                 f:'2026-05-15',ll:37, aht:290,login:318.3},
+  {ag:'Coronel, Yanina Mariana',             f:'2026-05-15',ll:23, aht:188,login:480.2},
+  {ag:'Menendez, Cinthya',                   f:'2026-05-16',ll:47, aht:163,login:227.3},
+  {ag:'Guiroy, Veronica Pamela',             f:'2026-05-16',ll:44, aht:285,login:240.2},
+  {ag:'Jorge, Marcos Santiago',              f:'2026-05-16',ll:38, aht:235,login:239.8},
+  {ag:'Blasco, Mariana Lorena',             f:'2026-05-16',ll:36, aht:277,login:240.2},
+  {ag:'Guglielmi, Romina',                   f:'2026-05-16',ll:29, aht:261,login:182.8},
+  {ag:'Las Heras, Marina',                   f:'2026-05-16',ll:25, aht:459,login:240.1},
+  {ag:'Jimenez Ballesteros, Maria Angelica', f:'2026-05-16',ll:21, aht:282,login:238.5},
+  {ag:'Alfonso, Angel Agustin',              f:'2026-05-16',ll:20, aht:293,login:238.2},
+];
+
+var curDay2='all';
+
+function getData2(){
+  if(curDay2==='all') return AG2;
+  var fd=DAILY2.filter(function(r){return r.f===curDay2;});
+  return AG2.map(function(base){
+    var day=fd.find(function(r){return r.ag===base.ag;});
+    if(day) return Object.assign({},base,{ll:day.ll,aht:day.aht,login:day.login,dias:1,conv:0,hold:0,fichas:0,noData:false});
+    return Object.assign({},base,{ll:0,aht:0,login:0,dias:0,conv:0,hold:0,fichas:0,noData:true});
+  }).sort(function(a,b){return b.ll-a.ll;});
+}
+
+function renderKpi2(data){
+  var totLL=data.reduce(function(s,r){return s+r.ll;},0);
+  var active=data.filter(function(r){return !r.noData;});
+  var avgAHT=active.reduce(function(s,r){return s+r.aht;},0)/active.length;
+  var avgLogin=active.reduce(function(s,r){return s+r.login;},0)/active.length;
+  var cll=active.filter(function(r){return r.ll>=OBJ_LL;}).length;
+  var caht=active.filter(function(r){return r.aht<=OBJ_AHT;}).length;
+  var fichas=curDay2==='all'?AG2.reduce(function(s,r){return s+r.fichas;},0):0;
+  var dinfo=curDay2==='all'?null:DIAS2.find(function(d){return d.f===curDay2;});
+  var nag=dinfo?dinfo.ag:20;
+  document.getElementById('kpiS2').innerHTML=
+    '<div class="kpi ac"><div class="kl">Llamadas</div><div class="kv">'+totLL.toLocaleString('es-AR')+'</div><div class="ks">'+(curDay2==='all'?'semana completa':curDay2.slice(8)+'/05')+'</div></div>'+
+    '<div class="kpi"><div class="kl">Agentes</div><div class="kv">'+nag+'</div><div class="ks">activos</div></div>'+
+    '<div class="kpi '+(avgAHT<=OBJ_AHT?'g':'r')+'"><div class="kl">AHT prom.</div><div class="kv">'+fa(avgAHT)+'</div><div class="ks">obj. ≤ 4m30s</div></div>'+
+    '<div class="kpi g"><div class="kl">Cumplen obj. ll.</div><div class="kv">'+cll+'<small style="font-size:13px">/'+active.length+'</small></div><div class="ks">≥ 60 llamadas</div></div>'+
+    '<div class="kpi a"><div class="kl">Cumplen AHT</div><div class="kv">'+caht+'<small style="font-size:13px">/'+active.length+'</small></div><div class="ks">≤ 4m30s</div></div>'+
+    (curDay2==='all'?'<div class="kpi r"><div class="kl">Fichas time out</div><div class="kv">'+fichas+'</div><div class="ks">acum. semana</div></div>':
+    '<div class="kpi"><div class="kl">Login prom.</div><div class="kv">'+fh(avgLogin)+'</div><div class="ks">por agente</div></div>');
+}
+
+function renderCharts2(data){
+  var s=[...data].sort(function(a,b){return b.ll-a.ll;});
+  var nm=s.map(function(r){return r.ag.split(',')[0];});
+  mk('cS2L','bar',nm,[{label:'Llamadas',data:s.map(function(r){return r.ll;}),
+    backgroundColor:s.map(function(r){return r.noData?'#E5E7EB':r.ll>=OBJ_LL?P:PL;}),borderRadius:3,barThickness:18}],
+    {indexAxis:'y',scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}},min:0},y:{grid:{display:false},ticks:{font:{size:10}}}},
+     plugins:{legend:{display:false},annotation:{annotations:curDay2==='all'?{}:{llLine:{type:'line',xMin:OBJ_LL,xMax:OBJ_LL,borderColor:'#1F2937',borderWidth:2,borderDash:[6,4],label:{content:'Obj 60',display:true,position:'start',backgroundColor:'rgba(31,41,55,0.85)',color:'#fff',font:{size:10,weight:'bold'},padding:4}}}}}});
+  if(chts['cS2A'])chts['cS2A'].destroy();
+  chts['cS2A']=new Chart(document.getElementById('cS2A'),{type:'bar',
+    data:{labels:nm,datasets:[{label:'AHT',data:s.map(function(r){return r.noData?0:r.aht;}),
+      backgroundColor:s.map(function(r){return r.noData?'#E5E7EB':r.aht<=OBJ_AHT?G:R;}),borderRadius:3,barThickness:18}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:false},annotation:{annotations:{ahtLine:{type:'line',xMin:OBJ_AHT,xMax:OBJ_AHT,borderColor:'#1F2937',borderWidth:2,borderDash:[6,4],label:{content:'Obj 4m30s',display:true,position:'start',backgroundColor:'rgba(31,41,55,0.85)',color:'#fff',font:{size:10,weight:'bold'},padding:4}}}}},
+      scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10},callback:function(v){return fa(v);}},min:0},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+  // Fichas S2 — solo en semana completa
+  if(curDay2==='all'){
+    var fichasSorted2=[...AG2].sort(function(a,b){return b.fichas-a.fichas;});
+    mk('cS2F','bar',fichasSorted2.map(function(r){return r.ag.split(',')[0];}),
+      [{label:'Fichas',data:fichasSorted2.map(function(r){return r.fichas;}),
+        backgroundColor:fichasSorted2.map(function(r){return r.fichas>=100?R:r.fichas>=20?AM:'#86EFAC';}),
+        borderRadius:3,barThickness:18}],
+      {indexAxis:'y',scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}},
+       plugins:{legend:{display:false}},
+       animation:{onComplete:function(){
+         var chart=this,ctx=chart.ctx,meta=chart.getDatasetMeta(0);
+         ctx.save();ctx.font='bold 11px Barlow,sans-serif';ctx.textBaseline='middle';
+         meta.data.forEach(function(bar,i){
+           var v=fichasSorted2[i].fichas;if(v===0)return;
+           var barW=bar.x-chart.scales.x.getPixelForValue(0);
+           if(barW>20){ctx.fillStyle='#fff';ctx.textAlign='right';ctx.fillText(v,bar.x-5,bar.y);}
+           else{ctx.fillStyle='#374151';ctx.textAlign='left';ctx.fillText(v,bar.x+4,bar.y);}
+         });ctx.restore();
+       }}});
+    document.getElementById('cS2Fcard').style.display='block';
+  } else {
+    document.getElementById('cS2Fcard').style.display='none';
+  }
+  if(curDay2==='all'){
+    var n=AG2.length;
+    var avgC=Math.round(AG2.reduce(function(s,r){return s+r.conv/r.dias;},0)/n);
+    var avgD=Math.round(AG2.reduce(function(s,r){return s+r.des/r.dias;},0)/n);
+    var avgB=Math.round(AG2.reduce(function(s,r){return s+r.bo/r.dias;},0)/n);
+    var avgSup=Math.round(AG2.reduce(function(s,r){return s+r.sup/r.dias;},0)/n);
+    var avgAx=Math.round(AG2.reduce(function(s,r){return s+r.aux/r.dias;},0)/n);
+    var avgH=Math.round(AG2.reduce(function(s,r){return s+r.hold/r.dias;},0)/n);
+    var avgL=Math.round(AG2.reduce(function(s,r){return s+r.login/r.dias;},0)/n);
+    var avgO=Math.max(0,avgL-avgC-avgD-avgB-avgSup-avgAx-avgH);
+    if(chts['cS2T'])chts['cS2T'].destroy();
+    chts['cS2T']=new Chart(document.getElementById('cS2T'),{type:'doughnut',
+      data:{labels:['Conversación','Descanso','BackOffice','Supervisor','Auxiliar','Hold','Otros'],
+            datasets:[{data:[avgC,avgD,avgB,avgSup,avgAx,avgH,avgO],backgroundColor:[P,'#D97706','#7C3AED',G,R,'#0EA5E9','#9CA3AF'],borderWidth:2,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:10},boxWidth:10,padding:6}},
+        tooltip:{callbacks:{label:function(ctx){return ' '+fh(ctx.raw)+' prom./agente/día';}}}}}});
+  } else {
+    var dSorted=[...getData2()].sort(function(a,b){return b.login-a.login;});
+    if(chts['cS2T'])chts['cS2T'].destroy();
+    chts['cS2T']=new Chart(document.getElementById('cS2T'),{type:'bar',
+      data:{labels:dSorted.map(function(r){return r.ag.split(',')[0];}),
+        datasets:[{label:'Login',data:dSorted.map(function(r){return r.noData?0:r.login;}),
+          backgroundColor:dSorted.map(function(r){return r.noData?'#E5E7EB':P;}),borderRadius:3,barThickness:18}]},
+      options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+        plugins:{legend:{display:false},annotation:{annotations:{loginLine:{type:'line',xMin:360,xMax:360,borderColor:'#1F2937',borderWidth:2,borderDash:[6,4],label:{content:'6 horas',display:true,position:'start',backgroundColor:'rgba(31,41,55,0.85)',color:'#fff',font:{size:10,weight:'bold'},padding:4}}}}},
+        scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:9},callback:function(v){return fh(v);}},min:0},y:{grid:{display:false},ticks:{font:{size:9}}}}}});
+  }
+}
+
+function renderTable2(data){
+  var isAll=curDay2==='all';
+  var s=[...data].sort(function(a,b){return b.ll-a.ll;});
+  var thead=document.querySelector('#tbS2').closest('table').querySelector('thead tr');
+  if(isAll){
+    thead.innerHTML='<th>Agente</th><th class="tr">Llamadas</th><th class="tr">AHT</th><th class="tr">Login</th><th class="tr">Conversación</th><th class="tr">Hold</th><th class="tr">Fichas T.O.</th><th class="tr">Días</th><th>Obj. ll.</th><th>Obj. AHT</th>';
+  } else {
+    thead.innerHTML='<th>Agente</th><th class="tr">Llamadas</th><th class="tr">AHT</th><th class="tr">Login</th><th>Obj. ll.</th><th>Obj. AHT</th>';
+  }
+  document.getElementById('tbS2').innerHTML=s.map(function(r){
+    var bll=r.noData?'b-gray':r.ll>=OBJ_LL?'bg':'br';
+    var baht=r.noData?'b-gray':r.aht<=OBJ_AHT?'bg':'br';
+    if(isAll){
+      return '<tr'+(r.noData?' style="opacity:.35"':'')+'>'+
+        '<td>'+r.ag+'</td><td class="tr"><strong>'+(r.noData?'—':r.ll)+'</strong></td><td class="tr">'+(r.noData?'—':fa(r.aht))+'</td>'+
+        '<td class="tr">'+fh(r.login)+'</td><td class="tr">'+fh(r.conv)+'</td><td class="tr">'+fh(r.hold)+'</td>'+
+        '<td class="tr"><strong>'+r.fichas+'</strong></td><td class="tr">'+r.dias+'</td>'+
+        '<td><span class="bdg '+bll+'">'+(r.noData?'—':r.ll>=OBJ_LL?'OK':'Bajo')+'</span></td>'+
+        '<td><span class="bdg '+baht+'">'+(r.noData?'—':r.aht<=OBJ_AHT?'OK':'Alto')+'</span></td></tr>';
+    } else {
+      return '<tr'+(r.noData?' style="opacity:.35"':'')+'>'+
+        '<td>'+r.ag+'</td><td class="tr"><strong>'+(r.noData?'—':r.ll)+'</strong></td>'+
+        '<td class="tr">'+(r.noData?'—':fa(r.aht))+'</td><td class="tr">'+(r.noData?'—':fh(r.login))+'</td>'+
+        '<td><span class="bdg '+bll+'">'+(r.noData?'—':r.ll>=OBJ_LL?'OK':'Bajo')+'</span></td>'+
+        '<td><span class="bdg '+baht+'">'+(r.noData?'—':r.aht<=OBJ_AHT?'OK':'Alto')+'</span></td></tr>';
+    }
+  }).join('');
+}
+
+function swDay2(day,el){
+  curDay2=day;
+  document.querySelectorAll('#pane-s2 .db').forEach(function(b){b.classList.remove('active');});
+  el.classList.add('active');
+  var lbl=day==='all'?'Semana completa':el.textContent;
+  document.getElementById('ctLl2').textContent='Llamadas por agente — '+lbl;
+  document.getElementById('ctTbl2').textContent='Tabla detalle — '+lbl;
+  document.getElementById('ctDist2').textContent=(day==='all'?'Distribución del tiempo — equipo (semana)':'Login por agente — '+lbl);
+  var data=getData2();
+  renderKpi2(data);renderCharts2(data);renderTable2(data);
+}
+
+// Update resumen chart to include both weeks
+function updateResumenCharts(){
+  var allDias=DIAS.concat(DIAS2);
+  mk('cRD','bar',allDias.map(function(r){return r.dia;}),[{label:'Llamadas',data:allDias.map(function(r){return r.ll;}),
+    backgroundColor:allDias.map(function(r,i){return i<6?P:'#7C3AED';}),borderRadius:4}],
+    {scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}},y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}}},plugins:{legend:{display:false}}});
+  mk('cRA','line',allDias.map(function(r){return r.dia;}),[{label:'AHT',data:allDias.map(function(r){return r.aht;}),
+    borderColor:P,backgroundColor:'rgba(107,33,168,.1)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:P}],
+    {scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}},y:{ticks:{font:{size:10},callback:function(v){return fa(v);}}}},plugins:{legend:{display:false}}});
+}
+
+// Hook into swWeek for s2
+var s2Built=false;
+var origSwWeek=swWeek;
+swWeek=function(id,el){
+  origSwWeek(id,el);
+  if(id==='s2'&&!s2Built){
+    var data=getData2();
+    renderKpi2(data);renderCharts2(data);renderTable2(data);
+    s2Built=true;
+  }
+};
+
+
+// ══════════════════════════════════════════════
+// OPERADORES CRÍTICOS — actualizar cada sábado
+// ══════════════════════════════════════════════
+var CRITICOS_DATA=[
+  {
+    nombre:'Angel Alfonso',
+    severidad:'critico',
+    qa:59.8, qa_s1:49.6, qa_s2:56.0, qa_s3:61.6, qa_s4:71.8,
+    deriv_total:5, deriv_principal:'CC',
+    aht_s1:238, aht_s2:233, aht_s3:246, aht_s4:235, fichas_s1:129, fichas_s2:129, fichas_s3:98, fichas_s4:14,
+    trend:'mejora',
+    trend_label:'Sube paulatinamente S1→S4 (49→71)',
+    qa_issues:[
+      {nivel:'r', texto:'CIERRE 59.8% — sigue siendo el más bajo del equipo, 29 pts por debajo del promedio (88.5%).'},
+      {nivel:'b', texto:'Mejora sostenida semana a semana: S1 49.6% → S2 56% → S3 61.6% → S4 71.8%. La trayectoria es positiva aunque parte de una base muy baja.'},
+    ],
+    op_issues:[
+      {nivel:'b', texto:'Fichas sin tipificar: de 129 en S1/S2 bajaron a 98 en S3 y a 14 en S4 — mejora operativa muy significativa.'},
+      {nivel:'o', texto:'AHT consistentemente bajo (3\'55" promedio) — uno de los pocos indicadores operativos en verde. Riesgo de llamadas cortas sin resolución real.'},
+    ],
+    nota:'Mantener seguimiento semanal. La tendencia QA es la correcta — no bajar la guardia.'
+  },
+  {
+    nombre:'Victoria Iturria',
+    severidad:'critico',
+    qa:74.8, qa_s1:69.8, qa_s2:81.8, qa_s3:75.6, qa_s4:71.8,
+    deriv_total:0, deriv_principal:'—',
+    aht_s1:347, aht_s2:null, aht_s3:323, aht_s4:358, fichas_s1:42, fichas_s2:null, fichas_s3:26, fichas_s4:17,
+    trend:'empeora',
+    trend_label:'Sin mejora sostenida — S4: 71.8%',
+    qa_issues:[
+      {nivel:'r', texto:'CIERRE 74.8% — segundo peor del equipo. El pico de S2 (81.8%) no se sostuvo: S3 cayó a 75.6% y S4 a 71.8%.'},
+      {nivel:'r', texto:'Patrón inconsistente sin mejora real: cuatro semanas en el rango 69–82% sin tendencia definida. La volatilidad en sí misma es un problema de calidad.'},
+    ],
+    op_issues:[
+      {nivel:'r', texto:'AHT cronicamente alto: S1 5\'47" · S3 5\'23" · S4 5\'58" — siempre muy por encima del objetivo de 4\'30".'},
+      {nivel:'b', texto:'Fichas sin tipificar mejoraron: de 42 en S1 a 26 en S3 y 17 en S4. Único indicador operativo con tendencia positiva.'},
+    ],
+    nota:'Doble foco: estabilizar QA por encima de 80% y reducir AHT. Ambos aspectos sin mejora real al cierre del mes.'
+  },
+  {
+    nombre:'Marina Las Heras',
+    severidad:'monitoreo',
+    qa:85.0, qa_s1:79.8, qa_s2:82.2, qa_s3:100.0, qa_s4:78.0,
+    deriv_total:27, deriv_principal:'FC',
+    aht_s1:346, aht_s2:358, aht_s3:358, aht_s4:364, fichas_s1:3, fichas_s2:6, fichas_s3:4, fichas_s4:2,
+    trend:'neutro',
+    trend_label:'S3=100% pero S4 retrocedió a 78%',
+    qa_issues:[
+      {nivel:'b', texto:'QA mejoró globalmente: CIERRE 85% con pico de 100% en S3. Pero S4 retrocedió a 78% — la inconsistencia es preocupante.'},
+      {nivel:'o', texto:'Patrón: mejora → retroceso. Sin estabilización sostenida por encima de 85% el riesgo de volver a zona de atención es real.'},
+    ],
+    op_issues:[
+      {nivel:'r', texto:'AHT en aumento constante: S1 5\'46" → S2 5\'58" → S3 5\'58" → S4 6\'04" — nunca estuvo cerca del objetivo y sigue empeorando.'},
+      {nivel:'r', texto:'27 derivaciones por FC — patrón sistemático sin reducción. FC indica dificultad del operador para conducir la llamada, no factores externos.'},
+    ],
+    nota:'Intervención en gestión del tiempo de llamada y conducción activa. AHT y FC son el foco operativo clave.'
+  },
+  {
+    nombre:'Lucia Jara',
+    severidad:'monitoreo',
+    qa:86.1, qa_s1:63.8, qa_s2:100.0, qa_s3:99.2, qa_s4:81.2,
+    deriv_total:28, deriv_principal:'FC + RR',
+    aht_s1:274, aht_s2:284, aht_s3:302, aht_s4:324, fichas_s1:10, fichas_s2:14, fichas_s3:18, fichas_s4:4,
+    trend:'neutro',
+    trend_label:'S2/S3 excelente — S4 bajó a 81.2%',
+    qa_issues:[
+      {nivel:'b', texto:'QA confirmó mejora: S2 100% → S3 99.2% sostenidos. El CIERRE de 86.1% refleja el crecimiento real desde el bajo inicio de S1 (63.8%).'},
+      {nivel:'o', texto:'S4 bajó a 81.2% — no es crítico pero interrumpe la racha positiva de S2/S3. Requiere atención para evitar un retroceso mayor.'},
+    ],
+    op_issues:[
+      {nivel:'r', texto:'AHT en aumento sostenido: S1 4\'34" → S2 4\'44" → S3 5\'02" → S4 5\'24" — ya supera el objetivo en casi un minuto al cierre del mes.'},
+      {nivel:'b', texto:'Fichas sin tipificar mejoraron en S4: de 18 en S3 bajaron a 4. Único indicador operativo con señal clara de mejora.'},
+    ],
+    nota:'Mantener el nivel QA de S2/S3. El AHT es el nuevo foco operativo — tendencia ascendente que necesita corrección.'
+  },
+  {
+    nombre:'Mariana Blasco',
+    severidad:'monitoreo',
+    qa:86.9, qa_s1:92.2, qa_s2:74.2, qa_s3:98.4, qa_s4:82.6,
+    deriv_total:37, deriv_principal:'CC + TI',
+    aht_s1:291, aht_s2:273, aht_s3:282, aht_s4:283, fichas_s1:18, fichas_s2:48, fichas_s3:54, fichas_s4:44,
+    trend:'neutro',
+    trend_label:'S3=98.4% recuperó — S4 bajó a 82.6%',
+    qa_issues:[
+      {nivel:'o', texto:'QA muy volátil: S1 92.2% → S2 74.2% → S3 98.4% → S4 82.6%. Oscilaciones de hasta 24 puntos entre semanas. Sin estabilidad.'},
+      {nivel:'r', texto:'El CIERRE de 86.9% promedia extremos: no refleja consistencia real. En cualquier semana puede estar en 74% o en 98% sin causa aparente.'},
+    ],
+    op_issues:[
+      {nivel:'r', texto:'Fichas sin tipificar sostenidamente altas: S2 48 → S3 54 → S4 44. Sin reducción real — tercer mes consecutivo por encima de 40.'},
+      {nivel:'r', texto:'37 derivaciones — mayor del equipo en el período. TI sistemática afecta reportes y seguimiento de reclamos en segunda línea.'},
+    ],
+    nota:'Trabajo específico en tipificación post-llamada y estabilización del proceso. La volatilidad del QA requiere intervención estructural.'
+  },
+];
+
+function faFmt(s){if(s===null||s===undefined)return '—';return Math.floor(s/60)+"'"+String(s%60).padStart(2,'0')+'"';}
+function fichasFmt(s1,s2){
+  var r='<span class="'+(s1>50?'bad':s1>20?'warn':'ok')+'">'+s1+'</span>';
+  if(s2!==null&&s2!==undefined) r+=' / <span class="'+(s2>50?'bad':s2>20?'warn':'ok')+'">'+s2+'</span>';
+  return r;
+}
+function renderCriticos(){
+  var grid=document.getElementById('critGrid');
+  if(!grid) return;
+  var sevMap={critico:{cls:'sev-rojo',label:'🔴 Crítico'},atencion:{cls:'sev-naranja',label:'🟠 Atención'},monitoreo:{cls:'sev-amarillo',label:'🟡 Monitoreo'}};
+  var trendMap={mejora:'crit-trend-up',empeora:'crit-trend-dn',neutro:'crit-trend-neu'};
+  var trendIcon={mejora:'↑',empeora:'↓',neutro:'→'};
+  var qaColor=function(v){return v<60?'bad':v<80?'warn':'ok';};
+
+  function buildIssues(arr){
+    return arr.map(function(iss){
+      return '<div class="crit-issue-row"><div class="crit-dot dot-'+iss.nivel+'"></div><span>'+iss.texto+'</span></div>';
+    }).join('');
+  }
+
+  grid.innerHTML=CRITICOS_DATA.map(function(op){
+    var sev=sevMap[op.severidad];
+    var tc=trendMap[op.trend];
+    var ti=trendIcon[op.trend];
+    return [
+      '<div class="crit-card">',
+        '<div class="crit-card-hdr">',
+          '<div><div class="crit-name">'+op.nombre+'</div><div class="crit-role">Operador telefónico · Frávega SAC</div></div>',
+          '<span class="sev-badge '+sev.cls+'">'+sev.label+'</span>',
+        '</div>',
+        // Metrics row 1: QA scores
+        '<div class="crit-metrics" style="grid-template-columns:repeat(5,1fr)">',
+          '<div class="crit-met"><div class="crit-met-val '+qaColor(op.qa)+'">'+op.qa+'%</div><div class="crit-met-lbl">Cierre</div></div>',
+          '<div class="crit-met"><div class="crit-met-val '+(op.qa_s2<70?'bad':op.qa_s2<80?'warn':'ok')+'" style="font-size:13px">'+op.qa_s2+'%</div><div class="crit-met-lbl">S2</div></div>',
+          '<div class="crit-met"><div class="crit-met-val '+(op.qa_s3===undefined?'':(op.qa_s3<70?'bad':op.qa_s3<80?'warn':'ok'))+'" style="font-size:13px">'+(op.qa_s3!==undefined?op.qa_s3+'%':'—')+'</div><div class="crit-met-lbl">S3</div></div>',
+          '<div class="crit-met"><div class="crit-met-val '+(op.qa_s4===undefined?'':(op.qa_s4<70?'bad':op.qa_s4<80?'warn':'ok'))+'" style="font-size:13px">'+(op.qa_s4!==undefined?op.qa_s4+'%':'—')+'</div><div class="crit-met-lbl">S4</div></div>',
+          '<div class="crit-met"><div class="crit-met-val '+(op.qa_s1<70?'bad':op.qa_s1<80?'warn':'ok')+'" style="font-size:11px;color:#9CA3AF">'+op.qa_s1+'%</div><div class="crit-met-lbl" style="color:#9CA3AF">S1</div></div>',
+        '</div>',
+        // Metrics row 2: derivaciones + AHT + Fichas
+        '<div class="crit-metrics" style="margin-top:1px">',
+          '<div class="crit-met"><div class="crit-met-val '+(op.deriv_total>25?'bad':op.deriv_total>10?'warn':'ok')+'">'+op.deriv_total+'</div><div class="crit-met-lbl">Derivaciones</div></div>',
+          '<div class="crit-met" style="grid-column:span 2"><div class="crit-met-val" style="font-size:13px;color:#6B7280;font-weight:600">'+op.deriv_principal+'</div><div class="crit-met-lbl">Motivo/s</div></div>',
+        '</div>',
+        '<div class="crit-metrics" style="margin-top:1px">',
+          '<div class="crit-met"><div class="crit-met-val '+(op.aht_s1>270?'bad':'ok')+'" style="font-size:14px">'+faFmt(op.aht_s1)+'</div><div class="crit-met-lbl">AHT Sem.1</div></div>',
+          '<div class="crit-met"><div class="crit-met-val '+(op.aht_s2!==null&&op.aht_s2>270?'bad':'ok')+'" style="font-size:14px">'+faFmt(op.aht_s2)+'</div><div class="crit-met-lbl">AHT Sem.2</div></div>',
+          '<div class="crit-met" title="Fichas time out = contactos que cerraron sin ser tipificados por el operador"><div class="crit-met-val" style="font-size:13px">'+fichasFmt(op.fichas_s1,op.fichas_s2)+(op.fichas_s3!==undefined?' / <span class="'+(op.fichas_s3>50?'bad':op.fichas_s3>20?'warn':'ok')+'">'+op.fichas_s3+'</span>':'')+'</div><div class="crit-met-lbl" style="line-height:1.3">Sin tipificar<br>S1 / S2</div></div>',
+        '</div>',
+        // CALIDAD section
+        '<div class="crit-section-block">',
+          '<div class="crit-section-label crit-label-qa">📊 CALIDAD</div>',
+          '<div class="crit-issues">'+buildIssues(op.qa_issues)+'</div>',
+        '</div>',
+        // OPERATIVO section
+        '<div class="crit-section-block" style="border-top:1px solid #F3F4F6">',
+          '<div class="crit-section-label crit-label-op">⚙️ OPERATIVO</div>',
+          '<div class="crit-issues">'+buildIssues(op.op_issues)+'</div>',
+        '</div>',
+        // Footer
+        '<div class="crit-footer">',
+          '<span>📌 '+op.nota+'</span>',
+          '<span class="'+tc+'">'+ti+' '+op.trend_label+'</span>',
+        '</div>',
+      '</div>'
+    ].join('');
+  }).join('');
+}
+
+// Hook into swWeek
+var _origSwWeekCrit=swWeek;
+swWeek=function(id,el){
+  _origSwWeekCrit(id,el);
+  if(id==='criticos'){
+    // Small delay to ensure pane is active in DOM before rendering
+    setTimeout(function(){renderCriticos();},50);
+  }
+};
+
+
+// ══════════════════════════════════════
+// SEMANA 3 — 18 al 23 de Mayo 2026
+// ══════════════════════════════════════
+var AG3=[
+  {ag:'Guiroy',               ll:460,aht:247,login:2688,conv:1910,aux:0,  sup:0,  bo:0,  des:0,  hold:20, fichas:2,  dias:6},
+  {ag:'Menendez',             ll:370,aht:209,login:2744,conv:1267,aux:0,  sup:0,  bo:0,  des:0,  hold:214,fichas:36, dias:6},
+  {ag:'Gonzalez Laura',       ll:401,aht:370,login:1761,conv:0,   aux:0,  sup:0,  bo:0,  des:0,  hold:0,  fichas:17, dias:5},
+  {ag:'Guglielmi',            ll:317,aht:332,login:2573,conv:1722,aux:0,  sup:0,  bo:0,  des:0,  hold:59, fichas:31, dias:6},
+  {ag:'Velazquez',            ll:314,aht:273,login:2378,conv:1448,aux:0,  sup:0,  bo:0,  des:0,  hold:204,fichas:26, dias:5},
+  {ag:'Huacaña Sanchez',      ll:314,aht:282,login:2424,conv:1484,aux:0,  sup:0,  bo:0,  des:0,  hold:40, fichas:1,  dias:5},
+  {ag:'Maidana',              ll:282,aht:238,login:1863,conv:1122,aux:0,  sup:0,  bo:0,  des:0,  hold:14, fichas:10, dias:5},
+  {ag:'Hernandez',            ll:264,aht:259,login:1793,conv:1137,aux:0,  sup:0,  bo:0,  des:0,  hold:42, fichas:29, dias:5},
+  {ag:'Molina',               ll:259,aht:323,login:2400,conv:1402,aux:0,  sup:0,  bo:0,  des:0,  hold:145,fichas:9,  dias:5},
+  {ag:'Blasco',               ll:258,aht:282,login:1883,conv:1198,aux:0,  sup:0,  bo:0,  des:0,  hold:211,fichas:54, dias:6},
+  {ag:'Jorge',                ll:235,aht:330,login:2034,conv:1291,aux:0,  sup:0,  bo:0,  des:0,  hold:240,fichas:1,  dias:6},
+  {ag:'Falcon',               ll:231,aht:292,login:1796,conv:1107,aux:0,  sup:0,  bo:0,  des:0,  hold:60, fichas:11, dias:5},
+  {ag:'Las Heras',            ll:230,aht:358,login:2049,conv:1369,aux:0,  sup:0,  bo:0,  des:0,  hold:217,fichas:4,  dias:6},
+  {ag:'Jimenez Ballesteros',  ll:225,aht:288,login:2003,conv:1079,aux:0,  sup:0,  bo:0,  des:0,  hold:245,fichas:10, dias:6},
+  {ag:'Valeria Silvana',      ll:225,aht:249,login:1785,conv:1145,aux:0,  sup:0,  bo:0,  des:0,  hold:143,fichas:31, dias:5},
+  {ag:'Jara',                 ll:223,aht:302,login:1797,conv:1093,aux:0,  sup:0,  bo:0,  des:0,  hold:132,fichas:18, dias:5},
+  {ag:'Arellano',             ll:193,aht:453,login:1817,conv:1456,aux:0,  sup:0,  bo:0,  des:0,  hold:103,fichas:10, dias:5},
+  {ag:'Iturria',              ll:163,aht:323,login:1744,conv:870, aux:0,  sup:0,  bo:0,  des:0,  hold:284,fichas:26, dias:5},
+  {ag:'Coronel',              ll:162,aht:182,login:2548,conv:497, aux:0,  sup:0,  bo:0,  des:0,  hold:45, fichas:10, dias:6},
+  {ag:'Munos',                ll:145,aht:234,login:1433,conv:564, aux:0,  sup:0,  bo:0,  des:0,  hold:23, fichas:1,  dias:3},
+  {ag:'Milanes',              ll:134,aht:443,login:1796,conv:975, aux:0,  sup:0,  bo:0,  des:0,  hold:139,fichas:8,  dias:5},
+  {ag:'Alfonso',              ll:174,aht:246,login:1666,conv:685, aux:0,  sup:0,  bo:0,  des:0,  hold:35, fichas:98, dias:5},
+  {ag:'Destefano',            ll:112,aht:397,login:1789,conv:729, aux:0,  sup:0,  bo:0,  des:0,  hold:175,fichas:3,  dias:5},
+  {ag:'Antunez',              ll:241,aht:342,login:2159,conv:1386,aux:0,  sup:0,  bo:0,  des:0,  hold:172,fichas:2,  dias:5},
+];
+
+var DIAS_S3=[
+  {ag:'Huacaña Sanchez',f:'2026-05-18',ll:48,aht:273,login:478,conv:218,hold:7},
+  {ag:'Huacaña Sanchez',f:'2026-05-19',ll:66,aht:287,login:480,conv:316,hold:9},
+  {ag:'Huacaña Sanchez',f:'2026-05-20',ll:58,aht:295,login:480,conv:286,hold:5},
+  {ag:'Huacaña Sanchez',f:'2026-05-21',ll:67,aht:272,login:470,conv:304,hold:7},
+  {ag:'Huacaña Sanchez',f:'2026-05-22',ll:75,aht:287,login:516,conv:359,hold:10},
+  {ag:'Iturria',f:'2026-05-18',ll:37,aht:277,login:352,conv:171,hold:49},
+  {ag:'Iturria',f:'2026-05-19',ll:33,aht:315,login:346,conv:173,hold:57},
+  {ag:'Iturria',f:'2026-05-20',ll:32,aht:307,login:346,conv:163,hold:56},
+  {ag:'Iturria',f:'2026-05-21',ll:34,aht:339,login:348,conv:192,hold:63},
+  {ag:'Iturria',f:'2026-05-22',ll:27,aht:378,login:352,conv:170,hold:59},
+  {ag:'Gonzalez Laura',f:'2026-05-18',ll:16,aht:383,login:357,conv:102,hold:2},
+  {ag:'Gonzalez Laura',f:'2026-05-19',ll:31,aht:448,login:343,conv:231,hold:44},
+  {ag:'Gonzalez Laura',f:'2026-05-20',ll:47,aht:326,login:354,conv:256,hold:22},
+  {ag:'Gonzalez Laura',f:'2026-05-21',ll:42,aht:306,login:351,conv:214,hold:19},
+  {ag:'Gonzalez Laura',f:'2026-05-22',ll:40,aht:387,login:356,conv:258,hold:12},
+  {ag:'Velazquez',f:'2026-05-18',ll:46,aht:240,login:480,conv:184,hold:25},
+  {ag:'Velazquez',f:'2026-05-19',ll:68,aht:290,login:480,conv:329,hold:37},
+  {ag:'Velazquez',f:'2026-05-20',ll:64,aht:275,login:477,conv:294,hold:55},
+  {ag:'Velazquez',f:'2026-05-21',ll:67,aht:273,login:477,conv:305,hold:43},
+  {ag:'Velazquez',f:'2026-05-22',ll:69,aht:290,login:464,conv:333,hold:43},
+  {ag:'Falcon',f:'2026-05-18',ll:46,aht:260,login:355,conv:199,hold:3},
+  {ag:'Falcon',f:'2026-05-19',ll:37,aht:389,login:359,conv:240,hold:18},
+  {ag:'Falcon',f:'2026-05-20',ll:51,aht:260,login:360,conv:221,hold:16},
+  {ag:'Falcon',f:'2026-05-21',ll:46,aht:278,login:360,conv:213,hold:8},
+  {ag:'Falcon',f:'2026-05-22',ll:51,aht:273,login:362,conv:232,hold:13},
+  {ag:'Coronel',f:'2026-05-18',ll:26,aht:165,login:398,conv:71,hold:8},
+  {ag:'Coronel',f:'2026-05-19',ll:24,aht:186,login:478,conv:74,hold:5},
+  {ag:'Coronel',f:'2026-05-20',ll:47,aht:217,login:447,conv:170,hold:17},
+  {ag:'Coronel',f:'2026-05-21',ll:43,aht:150,login:544,conv:107,hold:9},
+  {ag:'Coronel',f:'2026-05-22',ll:20,aht:202,login:483,conv:67,hold:4},
+  {ag:'Coronel',f:'2026-05-23',ll:2,aht:174,login:198,conv:5,hold:0},
+  {ag:'Arellano',f:'2026-05-18',ll:35,aht:427,login:366,conv:249,hold:16},
+  {ag:'Arellano',f:'2026-05-19',ll:41,aht:446,login:364,conv:304,hold:18},
+  {ag:'Arellano',f:'2026-05-20',ll:35,aht:491,login:361,conv:286,hold:26},
+  {ag:'Arellano',f:'2026-05-21',ll:41,aht:448,login:364,conv:306,hold:20},
+  {ag:'Arellano',f:'2026-05-22',ll:41,aht:453,login:362,conv:309,hold:20},
+  {ag:'Destefano',f:'2026-05-18',ll:7,aht:414,login:364,conv:48,hold:11},
+  {ag:'Destefano',f:'2026-05-19',ll:32,aht:362,login:356,conv:193,hold:58},
+  {ag:'Destefano',f:'2026-05-20',ll:27,aht:355,login:359,conv:160,hold:31},
+  {ag:'Destefano',f:'2026-05-21',ll:24,aht:441,login:356,conv:176,hold:38},
+  {ag:'Destefano',f:'2026-05-22',ll:22,aht:413,login:354,conv:151,hold:36},
+  {ag:'Valeria Silvana',f:'2026-05-18',ll:34,aht:235,login:352,conv:133,hold:21},
+  {ag:'Valeria Silvana',f:'2026-05-19',ll:53,aht:233,login:360,conv:206,hold:26},
+  {ag:'Valeria Silvana',f:'2026-05-20',ll:49,aht:249,login:360,conv:204,hold:37},
+  {ag:'Valeria Silvana',f:'2026-05-21',ll:45,aht:279,login:358,conv:209,hold:30},
+  {ag:'Valeria Silvana',f:'2026-05-22',ll:44,aht:250,login:355,conv:183,hold:26},
+  {ag:'Guiroy',f:'2026-05-18',ll:58,aht:240,login:479,conv:232,hold:3},
+  {ag:'Guiroy',f:'2026-05-19',ll:90,aht:252,login:525,conv:378,hold:1},
+  {ag:'Guiroy',f:'2026-05-20',ll:87,aht:242,login:480,conv:351,hold:4},
+  {ag:'Guiroy',f:'2026-05-21',ll:87,aht:257,login:483,conv:373,hold:4},
+  {ag:'Guiroy',f:'2026-05-22',ll:86,aht:257,login:480,conv:369,hold:3},
+  {ag:'Guiroy',f:'2026-05-23',ll:52,aht:237,login:241,conv:206,hold:2},
+  {ag:'Milanes',f:'2026-05-18',ll:25,aht:456,login:358,conv:190,hold:30},
+  {ag:'Milanes',f:'2026-05-19',ll:22,aht:551,login:358,conv:202,hold:35},
+  {ag:'Milanes',f:'2026-05-20',ll:28,aht:390,login:359,conv:182,hold:19},
+  {ag:'Milanes',f:'2026-05-21',ll:28,aht:445,login:363,conv:208,hold:25},
+  {ag:'Milanes',f:'2026-05-22',ll:31,aht:374,login:358,conv:193,hold:28},
+  {ag:'Guglielmi',f:'2026-05-18',ll:42,aht:299,login:508,conv:209,hold:9},
+  {ag:'Guglielmi',f:'2026-05-19',ll:67,aht:309,login:451,conv:345,hold:10},
+  {ag:'Guglielmi',f:'2026-05-20',ll:64,aht:309,login:459,conv:330,hold:8},
+  {ag:'Guglielmi',f:'2026-05-21',ll:57,aht:349,login:465,conv:331,hold:8},
+  {ag:'Guglielmi',f:'2026-05-22',ll:60,aht:323,login:451,conv:323,hold:10},
+  {ag:'Guglielmi',f:'2026-05-23',ll:27,aht:403,login:239,conv:181,hold:12},
+  {ag:'Maidana',f:'2026-05-18',ll:47,aht:227,login:423,conv:178,hold:0},
+  {ag:'Maidana',f:'2026-05-19',ll:63,aht:225,login:352,conv:236,hold:2},
+  {ag:'Maidana',f:'2026-05-20',ll:55,aht:231,login:358,conv:212,hold:0},
+  {ag:'Maidana',f:'2026-05-21',ll:59,aht:246,login:363,conv:242,hold:12},
+  {ag:'Maidana',f:'2026-05-22',ll:58,aht:261,login:367,conv:253,hold:0},
+  {ag:'Menendez',f:'2026-05-18',ll:26,aht:212,login:778,conv:92,hold:17},
+  {ag:'Menendez',f:'2026-05-19',ll:76,aht:196,login:442,conv:248,hold:32},
+  {ag:'Menendez',f:'2026-05-20',ll:63,aht:225,login:416,conv:236,hold:45},
+  {ag:'Menendez',f:'2026-05-21',ll:75,aht:202,login:435,conv:252,hold:42},
+  {ag:'Menendez',f:'2026-05-22',ll:91,aht:188,login:439,conv:285,hold:52},
+  {ag:'Menendez',f:'2026-05-23',ll:39,aht:232,login:234,conv:151,hold:25},
+  {ag:'Munos',f:'2026-05-20',ll:21,aht:238,login:479,conv:83,hold:5},
+  {ag:'Munos',f:'2026-05-21',ll:63,aht:220,login:478,conv:231,hold:9},
+  {ag:'Munos',f:'2026-05-22',ll:61,aht:244,login:476,conv:249,hold:8},
+  {ag:'Molina',f:'2026-05-18',ll:42,aht:287,login:478,conv:201,hold:18},
+  {ag:'Molina',f:'2026-05-19',ll:56,aht:320,login:484,conv:299,hold:27},
+  {ag:'Molina',f:'2026-05-20',ll:52,aht:335,login:480,conv:290,hold:38},
+  {ag:'Molina',f:'2026-05-21',ll:55,aht:329,login:479,conv:301,hold:26},
+  {ag:'Molina',f:'2026-05-22',ll:54,aht:344,login:479,conv:309,hold:34},
+  {ag:'Blasco',f:'2026-05-18',ll:37,aht:279,login:330,conv:172,hold:23},
+  {ag:'Blasco',f:'2026-05-19',ll:50,aht:275,login:328,conv:229,hold:52},
+  {ag:'Blasco',f:'2026-05-20',ll:43,aht:294,login:325,conv:211,hold:37},
+  {ag:'Blasco',f:'2026-05-21',ll:44,aht:270,login:325,conv:198,hold:28},
+  {ag:'Blasco',f:'2026-05-22',ll:52,aht:237,login:325,conv:205,hold:37},
+  {ag:'Blasco',f:'2026-05-23',ll:32,aht:338,login:250,conv:180,hold:31},
+  {ag:'Jimenez Ballesteros',f:'2026-05-18',ll:32,aht:307,login:353,conv:163,hold:38},
+  {ag:'Jimenez Ballesteros',f:'2026-05-19',ll:39,aht:276,login:349,conv:179,hold:27},
+  {ag:'Jimenez Ballesteros',f:'2026-05-20',ll:47,aht:261,login:361,conv:204,hold:39},
+  {ag:'Jimenez Ballesteros',f:'2026-05-21',ll:38,aht:302,login:351,conv:191,hold:44},
+  {ag:'Jimenez Ballesteros',f:'2026-05-22',ll:41,aht:302,login:353,conv:206,hold:56},
+  {ag:'Jimenez Ballesteros',f:'2026-05-23',ll:28,aht:283,login:236,conv:132,hold:39},
+  {ag:'Las Heras',f:'2026-05-18',ll:22,aht:367,login:355,conv:134,hold:25},
+  {ag:'Las Heras',f:'2026-05-19',ll:47,aht:363,login:367,conv:284,hold:44},
+  {ag:'Las Heras',f:'2026-05-20',ll:43,aht:329,login:364,conv:236,hold:31},
+  {ag:'Las Heras',f:'2026-05-21',ll:46,aht:340,login:364,conv:260,hold:45},
+  {ag:'Las Heras',f:'2026-05-22',ll:43,aht:384,login:360,conv:275,hold:44},
+  {ag:'Las Heras',f:'2026-05-23',ll:29,aht:367,login:239,conv:177,hold:25},
+  {ag:'Hernandez',f:'2026-05-18',ll:23,aht:268,login:359,conv:102,hold:2},
+  {ag:'Hernandez',f:'2026-05-19',ll:62,aht:255,login:357,conv:264,hold:10},
+  {ag:'Hernandez',f:'2026-05-20',ll:59,aht:252,login:358,conv:248,hold:6},
+  {ag:'Hernandez',f:'2026-05-21',ll:61,aht:257,login:359,conv:262,hold:10},
+  {ag:'Hernandez',f:'2026-05-22',ll:59,aht:263,login:360,conv:259,hold:12},
+  {ag:'Jorge',f:'2026-05-18',ll:36,aht:343,login:360,conv:206,hold:37},
+  {ag:'Jorge',f:'2026-05-19',ll:45,aht:311,login:358,conv:233,hold:44},
+  {ag:'Jorge',f:'2026-05-20',ll:43,aht:316,login:359,conv:226,hold:38},
+  {ag:'Jorge',f:'2026-05-21',ll:41,aht:324,login:359,conv:221,hold:33},
+  {ag:'Jorge',f:'2026-05-22',ll:38,aht:367,login:359,conv:232,hold:48},
+  {ag:'Jorge',f:'2026-05-23',ll:32,aht:320,login:239,conv:170,hold:35},
+  {ag:'Alfonso',f:'2026-05-18',ll:34,aht:231,login:358,conv:131,hold:8},
+  {ag:'Alfonso',f:'2026-05-19',ll:37,aht:241,login:359,conv:148,hold:11},
+  {ag:'Alfonso',f:'2026-05-20',ll:44,aht:197,login:359,conv:144,hold:8},
+  {ag:'Alfonso',f:'2026-05-21',ll:41,aht:238,login:354,conv:162,hold:2},
+  {ag:'Alfonso',f:'2026-05-23',ll:18,aht:327,login:236,conv:98,hold:4},
+  {ag:'Jara',f:'2026-05-18',ll:28,aht:387,login:364,conv:181,hold:28},
+  {ag:'Jara',f:'2026-05-19',ll:45,aht:277,login:355,conv:208,hold:11},
+  {ag:'Jara',f:'2026-05-20',ll:53,aht:252,login:357,conv:222,hold:28},
+  {ag:'Jara',f:'2026-05-21',ll:50,aht:293,login:360,conv:244,hold:29},
+  {ag:'Jara',f:'2026-05-22',ll:47,aht:303,login:361,conv:237,hold:33},
+  {ag:'Antunez',f:'2026-05-18',ll:41,aht:305,login:481,conv:209,hold:23},
+  {ag:'Antunez',f:'2026-05-19',ll:43,aht:352,login:355,conv:252,hold:23},
+  {ag:'Antunez',f:'2026-05-20',ll:56,aht:360,login:485,conv:336,hold:45},
+  {ag:'Antunez',f:'2026-05-21',ll:45,aht:329,login:357,conv:246,hold:29},
+  {ag:'Antunez',f:'2026-05-22',ll:56,aht:365,login:481,conv:340,hold:49},
+];
+
+var OBJ_LL3=60, OBJ_AHT3=270;
+var curDay3='all';
+function getData3(){
+  if(curDay3==='all') return AG3;
+  return AG3.map(function(r){
+    var d=DIAS_S3.find(function(x){return x.ag===r.ag&&x.f===curDay3;});
+    if(!d) return Object.assign({},r,{ll:0,aht:0,login:0,noData:true});
+    return Object.assign({},r,{ll:d.ll,aht:d.aht,login:d.login,conv:d.conv,hold:d.hold,noData:false});
+  });
+}
+function swDay3(day,el){
+  curDay3=day;
+  document.querySelectorAll('#pane-s3 .db').forEach(function(b){b.classList.remove('active');});
+  el.classList.add('active');
+  var data=getData3();
+  renderKpi3(data);renderCharts3(data);renderTable3(data);
+}
+function renderKpi3(data){
+  var ll=data.reduce(function(s,r){return s+r.ll;},0);
+  var ahtAvg=Math.round(data.filter(function(r){return r.ll>0;}).reduce(function(s,r){return s+r.aht;},0)/data.filter(function(r){return r.ll>0;}).length);
+  var best=data.reduce(function(a,b){return b.ll>a.ll?b:a;},{ll:0,ag:''});
+  var pct=Math.round(data.filter(function(r){return r.ll>=OBJ_LL3&&!r.noData;}).length/data.filter(function(r){return !r.noData;}).length*100);
+  document.getElementById('kpiS3').innerHTML=
+    '<div class="kpi ac"><div class="kl">Llamadas semana</div><div class="kv">'+ll.toLocaleString('es-AR')+'</div><div class="ks">total equipo</div></div>'+
+    '<div class="kpi"><div class="kl">AHT promedio</div><div class="kv">'+fa(ahtAvg)+'</div><div class="ks">objetivo ≤ 4\'30"</div></div>'+
+    '<div class="kpi g"><div class="kl">Mejor operador</div><div class="kv" style="font-size:16px">'+best.ag+'</div><div class="ks">'+best.ll+' llamadas</div></div>'+
+    '<div class="kpi '+(pct>=80?'g':pct>=60?'a':'r')+'"><div class="kl">Cumplimiento Obj.</div><div class="kv">'+pct+'%</div><div class="ks">agentes ≥ 60 ll</div></div>'+
+    '<div class="kpi"><div class="kl">Agentes activos</div><div class="kv">'+data.filter(function(r){return !r.noData;}).length+'</div><div class="ks">con datos este período</div></div>';
+}
+function renderCharts3(data){
+  var nm=data.map(function(r){return r.ag;});
+  var P='#5B21B6',PL='#C4B5FD',G='#059669',R='#DC2626';
+  mk('cS3L','bar',nm,[{label:'Llamadas',data:data.map(function(r){return r.ll;}),
+    backgroundColor:data.map(function(r){return r.noData?'#E5E7EB':r.ll>=OBJ_LL3?P:PL;}),borderRadius:3,barThickness:18}],
+    {indexAxis:'y',scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}},min:0},
+      y:{grid:{display:false},ticks:{font:{size:10}}}},
+    plugins:{legend:{display:false},
+      annotation:{annotations:curDay3==='all'?{}:{llLine:{type:'line',xMin:OBJ_LL3,xMax:OBJ_LL3,
+        borderColor:'#1F2937',borderWidth:2,borderDash:[6,4],
+        label:{content:'Obj 60',display:true,position:'start',
+          backgroundColor:'rgba(31,41,55,0.85)',color:'#fff',font:{size:10,weight:'bold'},padding:4}}}}}});
+  document.getElementById('ctLl3').textContent=curDay3==='all'?'Llamadas por agente — Semana completa':'Llamadas por agente — '+curDay3.split('-').reverse().slice(0,2).join('/');
+  mk('cS3A','bar',nm,[{label:'AHT',data:data.map(function(r){return r.noData?0:r.aht;}),
+    backgroundColor:data.map(function(r){return r.noData?'#E5E7EB':r.aht<=OBJ_AHT3?G:R;}),borderRadius:3,barThickness:18}],
+    {indexAxis:'y',scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10},callback:function(v){return fa(v);}},min:0},
+      y:{grid:{display:false},ticks:{font:{size:10}}}},
+    plugins:{legend:{display:false},
+      annotation:{annotations:{ahtLine:{type:'line',xMin:OBJ_AHT3,xMax:OBJ_AHT3,
+        borderColor:'#1F2937',borderWidth:2,borderDash:[6,4],
+        label:{content:"Obj 4'30\"",display:true,position:'start',
+          backgroundColor:'rgba(31,41,55,0.85)',color:'#fff',font:{size:10,weight:'bold'},padding:4}}}},
+      tooltip:{callbacks:{label:function(ctx){return ' '+fa(ctx.raw);}}}}});
+  if(curDay3==='all'){
+    document.getElementById('cS3Fcard').style.display='';
+    document.getElementById('ctDist3').textContent='Distribución del tiempo — equipo (semana)';
+    var totConv=AG3.reduce(function(s,r){return s+r.conv;},0);
+    var totHold=AG3.reduce(function(s,r){return s+r.hold;},0);
+    var totLogin=AG3.reduce(function(s,r){return s+r.login;},0);
+    var totOther=totLogin-totConv-totHold;
+    mk('cS3T','doughnut',['Conversación','Hold','Otro'],
+      [{data:[Math.round(totConv/totLogin*100),Math.round(totHold/totLogin*100),Math.round(totOther/totLogin*100)],
+        backgroundColor:['#5B21B6','#DB2777','#E5E7EB'],borderWidth:2,borderColor:'#fff'}],
+      {plugins:{legend:{display:true,position:'bottom'},
+        tooltip:{callbacks:{label:function(ctx){return ' '+ctx.raw+'%';}}}}});
+    var fichaSorted=AG3.slice().filter(function(r){return r.fichas>0;}).sort(function(a,b){return b.fichas-a.fichas;});
+    mk('cS3F','bar',fichaSorted.map(function(r){return r.ag;}),
+      [{label:'Sin tipificar',data:fichaSorted.map(function(r){return r.fichas;}),
+        backgroundColor:fichaSorted.map(function(r){return r.fichas>=100?'#DC2626':r.fichas>=20?'#D97706':'#059669';}),
+        borderRadius:3,barThickness:18}],
+      {indexAxis:'y',plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:function(ctx){return ' '+ctx.raw+' fichas sin tipificar';}}}},
+       scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},
+               y:{grid:{display:false},ticks:{font:{size:10}}}}});
+  } else {
+    document.getElementById('cS3Fcard').style.display='none';
+    document.getElementById('ctDist3').textContent='Login por agente — '+curDay3.split('-').reverse().slice(0,2).join('/');
+    mk('cS3T','bar',nm,[{label:'Login',data:data.map(function(r){return r.noData?0:r.login;}),
+      backgroundColor:data.map(function(r){return r.noData?'#E5E7EB':r.login>=360?G:PL;}),borderRadius:3,barThickness:18}],
+      {indexAxis:'y',scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10},callback:function(v){return fh(v);}},min:0},
+        y:{grid:{display:false},ticks:{font:{size:10}}}},
+      plugins:{legend:{display:false},
+        annotation:{annotations:{lgLine:{type:'line',xMin:360,xMax:360,
+          borderColor:'#1F2937',borderWidth:2,borderDash:[6,4],
+          label:{content:'6 hs',display:true,position:'start',
+            backgroundColor:'rgba(31,41,55,0.85)',color:'#fff',font:{size:10,weight:'bold'},padding:4}}}},
+        tooltip:{callbacks:{label:function(ctx){return ' '+fh(ctx.raw);}}}}});
+  }
+}
+function renderTable3(data){
+  var isAll=curDay3==='all';
+  document.getElementById('ctTbl3').textContent=isAll?'Tabla detalle — Semana completa':'Tabla detalle — '+curDay3.split('-').reverse().slice(0,2).join('/');
+  var sorted=data.slice().sort(function(a,b){return b.ll-a.ll;});
+  var P=sorted[0]?sorted[0].ll:0,A=sorted[0]?sorted[0].aht:0;
+  document.getElementById('tbS3').innerHTML=data.slice().sort(function(a,b){return b.ll-a.ll;}).map(function(r){
+    var llBadge=r.noData?'':(r.ll>=OBJ_LL3?'<span class="badge g">✓</span>':'<span class="badge r">✗</span>');
+    var ahtBadge=r.noData?'':(r.aht<=OBJ_AHT3?'<span class="badge g">✓</span>':'<span class="badge r">✗</span>');
+    if(isAll){
+      return '<tr'+(r.noData?' class="nd"':'')+'><td>'+r.ag+'</td>'+
+        '<td class="tr">'+(r.noData?'—':r.ll)+' '+llBadge+'</td>'+
+        '<td class="tr">'+(r.noData?'—':fa(r.aht))+' '+ahtBadge+'</td>'+
+        '<td class="tr">'+(r.noData?'—':fh(r.login))+'</td>'+
+        '<td class="tr">'+(r.noData?'—':fh(r.conv))+'</td>'+
+        '<td class="tr">'+(r.noData?'—':fh(r.hold))+'</td>'+
+        '<td class="tr">'+(r.noData?'—':r.fichas)+'</td>'+
+        '<td class="tr">'+(r.noData?'—':r.dias)+'</td>'+
+        '<td><div class="bar-sm"><div style="width:'+(r.noData?0:Math.round(r.ll/Math.max(P,1)*100))+'%"></div></div></td>'+
+        '<td><div class="bar-sm '+(r.noData?'':''+((r.aht<=OBJ_AHT3)?'g':'r'))+'"><div style="width:'+(r.noData?0:Math.min(Math.round(r.aht/600*100),100))+'%"></div></div></td>'+
+        '</tr>';
+    } else {
+      return '<tr'+(r.noData?' class="nd"':'')+'><td>'+r.ag+'</td>'+
+        '<td class="tr">'+(r.noData?'—':r.ll)+' '+llBadge+'</td>'+
+        '<td class="tr">'+(r.noData?'—':fa(r.aht))+' '+ahtBadge+'</td>'+
+        '<td class="tr">'+(r.noData?'—':fh(r.login))+'</td>'+
+        '<td class="tr">'+(r.noData?'—':fh(r.conv))+'</td>'+
+        '<td class="tr">'+(r.noData?'—':fh(r.hold))+'</td>'+
+        '<td class="tr" style="color:#D1D5DB">—</td>'+
+        '<td class="tr" style="color:#D1D5DB">—</td>'+
+  // Sin tipificar y Días: acumulados semanales, no disponibles por día
+        '<td><div class="bar-sm"><div style="width:'+(r.noData?0:Math.round(r.ll/Math.max(P,1)*100))+'%"></div></div></td>'+
+        '<td><div class="bar-sm '+(r.noData?'':''+((r.aht<=OBJ_AHT3)?'g':'r'))+'"><div style="width:'+(r.noData?0:Math.min(Math.round(r.aht/600*100),100))+'%"></div></div></td>'+
+        '</tr>';
+    }
+  }).join('');
+}
+
+// Hook S3 into swWeek
+var _origSwWeekS3=swWeek;
+swWeek=function(id,el){
+  _origSwWeekS3(id,el);
+  if(id==='s3'){
+    var data=getData3();
+    renderKpi3(data);renderCharts3(data);renderTable3(data);
+  }
+};
+
+
+// ══════════════════════════════════════
+// SEMANA 4 — 26 al 30 de Mayo 2026
+// ══════════════════════════════════════
+var AG4=[
+  {ag:'Guiroy',              ll:370,aht:230,login:1868,conv:1430,hold:13, fichas:0, dias:4},
+  {ag:'Menendez',            ll:367,aht:210,login:2006,conv:1283,hold:231,fichas:38,dias:5},
+  {ag:'Velazquez',           ll:286,aht:261,login:1933,conv:1246,hold:157,fichas:23,dias:4},
+  {ag:'Maidana',             ll:263,aht:244,login:1563,conv:1075,hold:7,  fichas:3, dias:4},
+  {ag:'Molina',              ll:250,aht:294,login:1924,conv:1227,hold:116,fichas:9, dias:4},
+  {ag:'Munos',               ll:222,aht:261,login:1916,conv:965, hold:44, fichas:1, dias:4},
+  {ag:'Hernandez',           ll:222,aht:285,login:1467,conv:1051,hold:47, fichas:15,dias:4},
+  {ag:'Las Heras',           ll:224,aht:364,login:1759,conv:1349,hold:233,fichas:2, dias:5},
+  {ag:'Huacaña Sanchez',     ll:204,aht:288,login:1455,conv:978, hold:17, fichas:0, dias:3},
+  {ag:'Guglielmi',           ll:203,aht:360,login:1601,conv:1209,hold:42, fichas:16,dias:4},
+  {ag:'Blasco',              ll:215,aht:283,login:1561,conv:1017,hold:147,fichas:44,dias:5},
+  {ag:'Falcon',              ll:193,aht:282,login:1451,conv:907, hold:40, fichas:8, dias:4},
+  {ag:'Valeria Silvana',     ll:184,aht:262,login:1422,conv:801, hold:141,fichas:37,dias:4},
+  {ag:'Jara',                ll:177,aht:324,login:1440,conv:953, hold:129,fichas:4, dias:4},
+  {ag:'Jimenez Ballesteros', ll:171,aht:346,login:1661,conv:984, hold:236,fichas:8, dias:5},
+  {ag:'Jorge',               ll:164,aht:346,login:1430,conv:943, hold:208,fichas:0, dias:4},
+  {ag:'Antunez',             ll:198,aht:371,login:1729,conv:1222,hold:172,fichas:4, dias:4},
+  {ag:'Milanes',             ll:114,aht:428,login:1431,conv:807, hold:122,fichas:3, dias:4},
+  {ag:'Iturria',             ll:120,aht:358,login:1387,conv:714, hold:259,fichas:17,dias:4},
+  {ag:'Coronel',             ll:132,aht:197,login:2163,conv:435, hold:45, fichas:11,dias:5},
+  {ag:'Alfonso',             ll:136,aht:235,login:1417,conv:521, hold:20, fichas:14,dias:4},
+  {ag:'Arellano',            ll:42, aht:522,login:424, conv:365, hold:16, fichas:1, dias:1},
+];
+
+var DIAS_S4=[
+  {ag:'Alfonso',f:'2026-05-26',ll:45,aht:192,login:356,conv:144,hold:3},
+  {ag:'Alfonso',f:'2026-05-27',ll:28,aht:251,login:356,conv:117,hold:8},
+  {ag:'Alfonso',f:'2026-05-28',ll:32,aht:231,login:346,conv:123,hold:3},
+  {ag:'Alfonso',f:'2026-05-29',ll:31,aht:266,login:359,conv:137,hold:6},
+  {ag:'Antunez',f:'2026-05-26',ll:54,aht:320,login:416,conv:288,hold:41},
+  {ag:'Antunez',f:'2026-05-27',ll:52,aht:404,login:480,conv:350,hold:53},
+  {ag:'Antunez',f:'2026-05-28',ll:42,aht:365,login:355,conv:255,hold:33},
+  {ag:'Antunez',f:'2026-05-29',ll:50,aht:395,login:478,conv:329,hold:45},
+  {ag:'Arellano',f:'2026-05-26',ll:42,aht:522,login:424,conv:365,hold:16},
+  {ag:'Blasco',f:'2026-05-26',ll:45,aht:279,login:326,conv:209,hold:29},
+  {ag:'Blasco',f:'2026-05-27',ll:44,aht:291,login:338,conv:213,hold:24},
+  {ag:'Blasco',f:'2026-05-28',ll:48,aht:277,login:330,conv:222,hold:41},
+  {ag:'Blasco',f:'2026-05-29',ll:44,aht:295,login:328,conv:216,hold:33},
+  {ag:'Blasco',f:'2026-05-30',ll:34,aht:277,login:239,conv:157,hold:20},
+  {ag:'Coronel',f:'2026-05-26',ll:28,aht:195,login:483,conv:91,hold:7},
+  {ag:'Coronel',f:'2026-05-27',ll:27,aht:176,login:486,conv:79,hold:3},
+  {ag:'Coronel',f:'2026-05-28',ll:20,aht:189,login:479,conv:63,hold:5},
+  {ag:'Coronel',f:'2026-05-29',ll:22,aht:215,login:477,conv:78,hold:15},
+  {ag:'Coronel',f:'2026-05-30',ll:35,aht:214,login:238,conv:124,hold:15},
+  {ag:'Falcon',f:'2026-05-26',ll:45,aht:296,login:365,conv:222,hold:19},
+  {ag:'Falcon',f:'2026-05-27',ll:49,aht:278,login:360,conv:227,hold:7},
+  {ag:'Falcon',f:'2026-05-28',ll:49,aht:283,login:361,conv:231,hold:9},
+  {ag:'Falcon',f:'2026-05-29',ll:50,aht:273,login:365,conv:227,hold:5},
+  {ag:'Guglielmi',f:'2026-05-27',ll:54,aht:371,login:452,conv:334,hold:18},
+  {ag:'Guglielmi',f:'2026-05-28',ll:55,aht:374,login:457,conv:343,hold:9},
+  {ag:'Guglielmi',f:'2026-05-29',ll:63,aht:325,login:449,conv:341,hold:11},
+  {ag:'Guglielmi',f:'2026-05-30',ll:31,aht:370,login:243,conv:191,hold:4},
+  {ag:'Guiroy',f:'2026-05-26',ll:104,aht:249,login:540,conv:432,hold:2},
+  {ag:'Guiroy',f:'2026-05-27',ll:99,aht:227,login:481,conv:374,hold:5},
+  {ag:'Guiroy',f:'2026-05-28',ll:93,aht:236,login:487,conv:365,hold:4},
+  {ag:'Guiroy',f:'2026-05-29',ll:74,aht:210,login:360,conv:259,hold:2},
+  {ag:'Hernandez',f:'2026-05-26',ll:57,aht:285,login:358,conv:271,hold:11},
+  {ag:'Hernandez',f:'2026-05-27',ll:49,aht:328,login:359,conv:267,hold:8},
+  {ag:'Hernandez',f:'2026-05-28',ll:61,aht:263,login:405,conv:268,hold:11},
+  {ag:'Hernandez',f:'2026-05-29',ll:55,aht:267,login:345,conv:245,hold:17},
+  {ag:'Huacaña Sanchez',f:'2026-05-27',ll:71,aht:279,login:486,conv:330,hold:7},
+  {ag:'Huacaña Sanchez',f:'2026-05-28',ll:64,aht:300,login:481,conv:320,hold:5},
+  {ag:'Huacaña Sanchez',f:'2026-05-29',ll:69,aht:285,login:488,conv:328,hold:5},
+  {ag:'Iturria',f:'2026-05-26',ll:28,aht:371,login:342,conv:173,hold:69},
+  {ag:'Iturria',f:'2026-05-27',ll:32,aht:353,login:353,conv:188,hold:63},
+  {ag:'Iturria',f:'2026-05-28',ll:30,aht:377,login:348,conv:188,hold:69},
+  {ag:'Iturria',f:'2026-05-29',ll:30,aht:331,login:344,conv:165,hold:58},
+  {ag:'Jara',f:'2026-05-26',ll:41,aht:381,login:365,conv:260,hold:37},
+  {ag:'Jara',f:'2026-05-27',ll:45,aht:318,login:359,conv:238,hold:40},
+  {ag:'Jara',f:'2026-05-28',ll:45,aht:299,login:360,conv:224,hold:19},
+  {ag:'Jara',f:'2026-05-29',ll:46,aht:301,login:356,conv:231,hold:33},
+  {ag:'Jimenez Ballesteros',f:'2026-05-26',ll:37,aht:370,login:356,conv:228,hold:51},
+  {ag:'Jimenez Ballesteros',f:'2026-05-27',ll:38,aht:338,login:356,conv:214,hold:53},
+  {ag:'Jimenez Ballesteros',f:'2026-05-28',ll:38,aht:311,login:355,conv:197,hold:41},
+  {ag:'Jimenez Ballesteros',f:'2026-05-29',ll:32,aht:365,login:355,conv:195,hold:55},
+  {ag:'Jimenez Ballesteros',f:'2026-05-30',ll:26,aht:346,login:239,conv:150,hold:36},
+  {ag:'Jorge',f:'2026-05-26',ll:39,aht:360,login:360,conv:234,hold:52},
+  {ag:'Jorge',f:'2026-05-27',ll:39,aht:373,login:353,conv:242,hold:52},
+  {ag:'Jorge',f:'2026-05-28',ll:42,aht:351,login:358,conv:245,hold:62},
+  {ag:'Jorge',f:'2026-05-29',ll:44,aht:303,login:359,conv:222,hold:42},
+  {ag:'Las Heras',f:'2026-05-26',ll:56,aht:347,login:427,conv:324,hold:46},
+  {ag:'Las Heras',f:'2026-05-27',ll:48,aht:355,login:366,conv:284,hold:53},
+  {ag:'Las Heras',f:'2026-05-28',ll:44,aht:367,login:364,conv:269,hold:51},
+  {ag:'Las Heras',f:'2026-05-29',ll:46,aht:359,login:362,conv:275,hold:50},
+  {ag:'Las Heras',f:'2026-05-30',ll:30,aht:395,login:240,conv:197,hold:33},
+  {ag:'Maidana',f:'2026-05-26',ll:61,aht:229,login:350,conv:233,hold:0},
+  {ag:'Maidana',f:'2026-05-27',ll:62,aht:246,login:367,conv:255,hold:0},
+  {ag:'Maidana',f:'2026-05-28',ll:58,aht:247,login:366,conv:239,hold:4},
+  {ag:'Maidana',f:'2026-05-29',ll:82,aht:255,login:480,conv:348,hold:3},
+  {ag:'Menendez',f:'2026-05-26',ll:84,aht:189,login:442,conv:265,hold:44},
+  {ag:'Menendez',f:'2026-05-27',ll:89,aht:196,login:443,conv:291,hold:44},
+  {ag:'Menendez',f:'2026-05-28',ll:72,aht:248,login:444,conv:298,hold:55},
+  {ag:'Menendez',f:'2026-05-29',ll:77,aht:218,login:441,conv:280,hold:58},
+  {ag:'Menendez',f:'2026-05-30',ll:45,aht:199,login:236,conv:149,hold:30},
+  {ag:'Milanes',f:'2026-05-26',ll:27,aht:460,login:359,conv:207,hold:35},
+  {ag:'Milanes',f:'2026-05-27',ll:31,aht:368,login:358,conv:190,hold:24},
+  {ag:'Milanes',f:'2026-05-28',ll:31,aht:420,login:357,conv:217,hold:36},
+  {ag:'Milanes',f:'2026-05-29',ll:25,aht:464,login:357,conv:193,hold:27},
+  {ag:'Molina',f:'2026-05-26',ll:61,aht:294,login:482,conv:299,hold:30},
+  {ag:'Molina',f:'2026-05-27',ll:65,aht:291,login:481,conv:315,hold:35},
+  {ag:'Molina',f:'2026-05-28',ll:64,aht:296,login:481,conv:316,hold:26},
+  {ag:'Molina',f:'2026-05-29',ll:60,aht:297,login:480,conv:297,hold:25},
+  {ag:'Munos',f:'2026-05-26',ll:57,aht:272,login:479,conv:258,hold:11},
+  {ag:'Munos',f:'2026-05-27',ll:52,aht:276,login:479,conv:239,hold:14},
+  {ag:'Munos',f:'2026-05-28',ll:59,aht:238,login:478,conv:234,hold:4},
+  {ag:'Munos',f:'2026-05-29',ll:54,aht:260,login:480,conv:234,hold:15},
+  {ag:'Valeria Silvana',f:'2026-05-26',ll:44,aht:265,login:351,conv:194,hold:44},
+  {ag:'Valeria Silvana',f:'2026-05-27',ll:50,aht:252,login:360,conv:210,hold:33},
+  {ag:'Valeria Silvana',f:'2026-05-28',ll:47,aht:250,login:352,conv:196,hold:30},
+  {ag:'Valeria Silvana',f:'2026-05-29',ll:43,aht:281,login:359,conv:201,hold:34},
+  {ag:'Velazquez',f:'2026-05-26',ll:74,aht:237,login:479,conv:292,hold:22},
+  {ag:'Velazquez',f:'2026-05-27',ll:73,aht:252,login:482,conv:307,hold:46},
+  {ag:'Velazquez',f:'2026-05-28',ll:66,aht:273,login:452,conv:300,hold:36},
+  {ag:'Velazquez',f:'2026-05-29',ll:73,aht:285,login:520,conv:347,hold:53},
+];
+
+var OBJ_LL4=60, OBJ_AHT4=270;
+var curDay4='all';
+function getData4(){
+  if(curDay4==='all') return AG4;
+  return AG4.map(function(r){
+    var d=DIAS_S4.find(function(x){return x.ag===r.ag&&x.f===curDay4;});
+    if(!d) return Object.assign({},r,{ll:0,aht:0,login:0,conv:0,hold:0,noData:true});
+    return Object.assign({},r,{ll:d.ll,aht:d.aht,login:d.login,conv:d.conv,hold:d.hold,noData:false});
+  });
+}
+function swDay4(day,el){
+  curDay4=day;
+  document.querySelectorAll('#pane-s4 .db').forEach(function(b){b.classList.remove('active');});
+  el.classList.add('active');
+  var data=getData4();
+  renderKpi4(data);renderCharts4(data);renderTable4(data);
+}
+function renderKpi4(data){
+  var valid=data.filter(function(r){return !r.noData;});
+  var ll=data.reduce(function(s,r){return s+r.ll;},0);
+  var ahtAvg=Math.round(valid.reduce(function(s,r){return s+r.aht;},0)/valid.length);
+  var best=data.reduce(function(a,b){return b.ll>a.ll?b:a;},{ll:0,ag:''});
+  var pct=Math.round(valid.filter(function(r){return r.ll>=OBJ_LL4;}).length/valid.length*100);
+  document.getElementById('kpiS4').innerHTML=
+    '<div class="kpi ac"><div class="kl">Llamadas semana</div><div class="kv">'+ll.toLocaleString('es-AR')+'</div><div class="ks">total equipo</div></div>'+
+    '<div class="kpi"><div class="kl">AHT promedio</div><div class="kv">'+fa(ahtAvg)+'</div><div class="ks">objetivo ≤ 4\'30"</div></div>'+
+    '<div class="kpi g"><div class="kl">Mejor operador</div><div class="kv" style="font-size:16px">'+best.ag+'</div><div class="ks">'+best.ll+' llamadas</div></div>'+
+    '<div class="kpi '+(pct>=80?'g':pct>=60?'a':'r')+'"><div class="kl">Cumplimiento Obj.</div><div class="kv">'+pct+'%</div><div class="ks">agentes ≥ 60 ll</div></div>'+
+    '<div class="kpi"><div class="kl">Agentes activos</div><div class="kv">'+valid.length+'</div><div class="ks">con datos este período</div></div>';
+}
+function renderCharts4(data){
+  var nm=data.map(function(r){return r.ag;});
+  var P='#5B21B6',PL='#C4B5FD',G='#059669',R='#DC2626';
+  mk('cS4L','bar',nm,[{label:'Llamadas',data:data.map(function(r){return r.ll;}),
+    backgroundColor:data.map(function(r){return r.noData?'#E5E7EB':r.ll>=OBJ_LL4?P:PL;}),borderRadius:3,barThickness:18}],
+    {indexAxis:'y',scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}},min:0},y:{grid:{display:false},ticks:{font:{size:10}}}},
+    plugins:{legend:{display:false},
+      annotation:{annotations:curDay4==='all'?{}:{llLine:{type:'line',xMin:OBJ_LL4,xMax:OBJ_LL4,borderColor:'#1F2937',borderWidth:2,borderDash:[6,4],label:{content:'Obj 60',display:true,position:'start',backgroundColor:'rgba(31,41,55,0.85)',color:'#fff',font:{size:10,weight:'bold'},padding:4}}}}}});
+  document.getElementById('ctLl4').textContent=curDay4==='all'?'Llamadas por agente — Semana completa':'Llamadas por agente — '+curDay4.split('-').reverse().slice(0,2).join('/');
+  mk('cS4A','bar',nm,[{label:'AHT',data:data.map(function(r){return r.noData?0:r.aht;}),
+    backgroundColor:data.map(function(r){return r.noData?'#E5E7EB':r.aht<=OBJ_AHT4?G:R;}),borderRadius:3,barThickness:18}],
+    {indexAxis:'y',scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10},callback:function(v){return fa(v);}},min:0},y:{grid:{display:false},ticks:{font:{size:10}}}},
+    plugins:{legend:{display:false},
+      annotation:{annotations:{ahtLine:{type:'line',xMin:OBJ_AHT4,xMax:OBJ_AHT4,borderColor:'#1F2937',borderWidth:2,borderDash:[6,4],label:{content:"Obj 4'30\"",display:true,position:'start',backgroundColor:'rgba(31,41,55,0.85)',color:'#fff',font:{size:10,weight:'bold'},padding:4}}}},
+      tooltip:{callbacks:{label:function(ctx){return ' '+fa(ctx.raw);}}}}});
+  if(curDay4==='all'){
+    document.getElementById('cS4Fcard').style.display='';
+    document.getElementById('ctDist4').textContent='Distribución del tiempo — equipo (semana)';
+    var tC=AG4.reduce(function(s,r){return s+r.conv;},0),tH=AG4.reduce(function(s,r){return s+r.hold;},0),tL=AG4.reduce(function(s,r){return s+r.login;},0);
+    mk('cS4T','doughnut',['Conversación','Hold','Otro'],
+      [{data:[Math.round(tC/tL*100),Math.round(tH/tL*100),Math.round((tL-tC-tH)/tL*100)],backgroundColor:['#5B21B6','#DB2777','#E5E7EB'],borderWidth:2,borderColor:'#fff'}],
+      {plugins:{legend:{display:true,position:'bottom'},tooltip:{callbacks:{label:function(ctx){return ' '+ctx.raw+'%';}}}}});
+    var fs=AG4.slice().filter(function(r){return r.fichas>0;}).sort(function(a,b){return b.fichas-a.fichas;});
+    mk('cS4F','bar',fs.map(function(r){return r.ag;}),
+      [{label:'Sin tipificar',data:fs.map(function(r){return r.fichas;}),
+        backgroundColor:fs.map(function(r){return r.fichas>=50?'#DC2626':r.fichas>=20?'#D97706':'#059669';}),borderRadius:3,barThickness:18}],
+      {indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ' '+ctx.raw+' sin tipificar';}}}},
+       scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}}});
+  } else {
+    document.getElementById('cS4Fcard').style.display='none';
+    document.getElementById('ctDist4').textContent='Login por agente — '+curDay4.split('-').reverse().slice(0,2).join('/');
+    mk('cS4T','bar',nm,[{label:'Login',data:data.map(function(r){return r.noData?0:r.login;}),
+      backgroundColor:data.map(function(r){return r.noData?'#E5E7EB':r.login>=360?G:PL;}),borderRadius:3,barThickness:18}],
+      {indexAxis:'y',scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10},callback:function(v){return fh(v);}},min:0},y:{grid:{display:false},ticks:{font:{size:10}}}},
+      plugins:{legend:{display:false},
+        annotation:{annotations:{lgLine:{type:'line',xMin:360,xMax:360,borderColor:'#1F2937',borderWidth:2,borderDash:[6,4],label:{content:'6 hs',display:true,position:'start',backgroundColor:'rgba(31,41,55,0.85)',color:'#fff',font:{size:10,weight:'bold'},padding:4}}}},
+        tooltip:{callbacks:{label:function(ctx){return ' '+fh(ctx.raw);}}}}});
+  }
+}
+function renderTable4(data){
+  var isAll=curDay4==='all';
+  document.getElementById('ctTbl4').textContent=isAll?'Tabla detalle — Semana completa':'Tabla detalle — '+curDay4.split('-').reverse().slice(0,2).join('/');
+  var sorted=data.slice().sort(function(a,b){return b.ll-a.ll;});
+  var P=sorted[0]?sorted[0].ll:0;
+  document.getElementById('tbS4').innerHTML=sorted.map(function(r){
+    var llB=r.noData?'':(r.ll>=OBJ_LL4?'<span class="badge g">✓</span>':'<span class="badge r">✗</span>');
+    var aB=r.noData?'':(r.aht<=OBJ_AHT4?'<span class="badge g">✓</span>':'<span class="badge r">✗</span>');
+    if(isAll){
+      return '<tr'+(r.noData?' class="nd"':'')+'><td>'+r.ag+'</td>'+
+        '<td class="tr">'+(r.noData?'—':r.ll)+' '+llB+'</td>'+
+        '<td class="tr">'+(r.noData?'—':fa(r.aht))+' '+aB+'</td>'+
+        '<td class="tr">'+(r.noData?'—':fh(r.login))+'</td>'+
+        '<td class="tr">'+(r.noData?'—':fh(r.conv))+'</td>'+
+        '<td class="tr">'+(r.noData?'—':fh(r.hold))+'</td>'+
+        '<td class="tr">'+(r.noData?'—':r.fichas)+'</td>'+
+        '<td class="tr">'+(r.noData?'—':r.dias)+'</td>'+
+        '<td><div class="bar-sm"><div style="width:'+(r.noData?0:Math.round(r.ll/Math.max(P,1)*100))+'%"></div></div></td>'+
+        '<td><div class="bar-sm '+(r.noData?'':''+((r.aht<=OBJ_AHT4)?'g':'r'))+'"><div style="width:'+(r.noData?0:Math.min(Math.round(r.aht/600*100),100))+'%"></div></div></td></tr>';
+    } else {
+      return '<tr'+(r.noData?' class="nd"':'')+'><td>'+r.ag+'</td>'+
+        '<td class="tr">'+(r.noData?'—':r.ll)+' '+llB+'</td>'+
+        '<td class="tr">'+(r.noData?'—':fa(r.aht))+' '+aB+'</td>'+
+        '<td class="tr">'+(r.noData?'—':fh(r.login))+'</td>'+
+        '<td class="tr">'+(r.noData?'—':fh(r.conv))+'</td>'+
+        '<td class="tr">'+(r.noData?'—':fh(r.hold))+'</td>'+
+        '<td class="tr" style="color:#D1D5DB">—</td><td class="tr" style="color:#D1D5DB">—</td>'+
+        '<td><div class="bar-sm"><div style="width:'+(r.noData?0:Math.round(r.ll/Math.max(P,1)*100))+'%"></div></div></td>'+
+        '<td><div class="bar-sm '+(r.noData?'':''+((r.aht<=OBJ_AHT4)?'g':'r'))+'"><div style="width:'+(r.noData?0:Math.min(Math.round(r.aht/600*100),100))+'%"></div></div></td></tr>';
+    }
+  }).join('');
+}
+var _origSwWeekS4=swWeek;
+swWeek=function(id,el){
+  _origSwWeekS4(id,el);
+  if(id==='s4'){var data=getData4();renderKpi4(data);renderCharts4(data);renderTable4(data);}
+};
+
+// Update resumen on load
+setTimeout(updateResumenCharts,300);
+</script>
+
+</body>
+</html>
